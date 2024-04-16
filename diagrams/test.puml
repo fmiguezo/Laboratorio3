@@ -1,0 +1,77 @@
+@startuml name
+'https://plantuml.com/class-diagram
+
+class Empleado {
+    - CategoriaEmpleado categoria
+    - Bono bonoResultado
+    - Bono bonoPresentismo
+    - int cantidadFaltas
+    - CalculadorSueldo calculadorSueldo
+
+    + getSueldo()
+}
+
+abstract class CalculadorSueldo {
+}
+
+class CalculadorSueldoBasico {
+    + getSueldo(Empleado empleado)
+}
+
+class CalculadorSueldoAvanzado {
+    + getSueldo(Empleado empleado)
+}
+
+abstract class CategoriaEmpleado {
+    - String nombre
+    - Double sueldo
+
+    + String getNombre()
+    + Double getSueldo()
+}
+
+class Gerente extends CategoriaEmpleado {}
+
+class Administrativo extends CategoriaEmpleado {}
+
+class Cadete extends CategoriaEmpleado {}
+
+class Operador extends CategoriaEmpleado {}
+
+
+abstract class Bono {
+    + abstract Double calcularBono(int valor);
+}
+
+'abstract BonoPresentismo extends Bono {
+'    + Double calcularBono(int faltas);
+'}
+
+class BonoPresentismoA extends BonoPresentismo {}
+
+class BonoPresentismoB extends BonoPresentismo {}
+
+abstract BonoResultado extends Bono {
+    + Double calcularBono(int valor);
+}
+
+' relaciones
+
+Empleado o-r- CategoriaEmpleado
+Empleado o-l- Bono
+Empleado o-u- CalculadorSueldo
+
+CalculadorSueldo <|-r- CalculadorSueldoAvanzado
+CalculadorSueldo <|-l- CalculadorSueldoBasico
+
+' notas
+
+note left of Empleado::getSueldo
+    this.calculadortSUeldo.getSUeldo()
+end note
+
+note left of CalculadorSueldoBasico::getSueldo
+    return empleado.getCategoria().getSueldo + ...
+end note
+
+@enduml

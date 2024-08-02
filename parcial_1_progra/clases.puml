@@ -1,0 +1,173 @@
+/'
+Un banco acaba de lanzar una nueva línea de créditos para sus clientes y desea desarrollar una
+aplicación que le permita procesar las solicitudes de aplicación que los clientes fueron cargando. 
+
+
+Se pide:
+a. Diagrama de clases de la solución. Debe incluir todos los métodos y atributos relevantes.
+b. Codificar y demostrar el uso de los métodos que permitan al banco aprobar o rechazar una
+solicitud de un crédito:
+i. De tipo multipropósito.
+ii. De tipo hipotecario para un único solicitante.
+iii. De tipo hipotecario para un grupo familiar.
+Consideraciones:
+● Asuma que las solicitudes ya fueron generadas
+'/
+
+@startuml
+class Banco {
+    - clientes: Cliente[]
+    - creditos: Credito[]
+    - verificarCredito: VerificadorCredito
+
+    + solicitarCreditoPersonal(cliente: ClienteIndividual): void
+    + solicitarCreditoHipotecario(cliente: ClienteIndividual): void
+    + solicitarCreditoHipotecarioFamiliar(cliente: ClienteGrupoFamiliar): void
+    + aprobarCredito(credito: Credito): void
+}
+
+abstract class Credito {
+    # edadMaxima: number
+    # montoMaximo: number
+    # plazos: number[]
+    # relacionCuotaIngresos: number
+    # cliente: Cliente
+}
+
+class CreditoHipotecarioFamiliar extends Credito {
+    - edadMaxima: number = 60
+    - montoMaximo: number = 250000000
+    - plazos: number[] = [10, 15, 20, 30]
+    - relacionCuotaIngresos: number = 0.25
+    - cliente: Cliente
+
+    + CreditoHipotecarioFamiliar(cliente: ClienteGrupoFamiliar)
+}
+
+class CreditoHipotecario extends Credito {
+    - edadMaxima: number = 65;
+    - montoMaximo: number = 200000000
+    - plazos: number[] = [10, 15, 20]
+    - relacionCuotaIngresos: number = 0.25
+    - cliente: Cliente
+
+    + CreditoHipotecario(cliente: ClienteIndividual)
+}
+
+class CreditoPersonal extends Credito {
+    - edadMaxima: number = 80;
+    - montoMaximo: number = 15000000
+    - plazos: number[] = [1, 3, 5]
+    - relacionCuotaIngresos: number = 0.3
+    - cliente: Cliente
+
+    + CreditoPersonal(cliente: ClienteIndividual)
+}
+
+enum TipoCliente {
+    INDIVIDUAL
+    GRUPO_FAMILIAR
+}
+
+abstract class Cliente {
+    # edad: number
+    # ingresosCertificados: number
+    # ingresosNetos: number
+    # cuota: number
+    # credito: Credito
+    # tipoCliente: TipoCliente
+
+    + getters_y_setters()
+}
+
+class ClienteIndividual implements Cliente {
+    + solicitarCreditoPersonal(): void
+    + solicitarCreditoHipotecario(): void
+}
+
+class ClienteGrupoFamiliar implements Cliente {
+    - miembros: Cliente[]
+
+    + solicitarCreditoHipotecarioFamiliar(): void
+    + override get edad(): number
+    + override get ingresosCertificados(): number
+    + override get ingresosNetos(): number
+}
+
+class VerificadorCredito {
+    + verificarCredito(credito: Credito): boolean
+
+    - verificarEdad(): boolean
+    - verificarMonto(): boolean
+    - verificarPlazo(): boolean
+    - verificarRelacionCuotaIngresos(): boolean
+}
+
+' RELACIONES
+Credito *-- Cliente
+Banco o-- Cliente
+Banco o-- Credito
+Banco o-- VerificadorCredito
+ClienteGrupoFamiliar *-- Cliente
+
+
+' NOTAS
+note left of ClienteIndividual::solicitarCreditoPersonal
+    c = new CreditoPersonal(this)
+end note
+
+note left of ClienteIndividual::solicitarCreditoHipotecario
+    c = new CreditoHipotecario(this)
+end note
+
+note right of ClienteGrupoFamiliar::solicitarCreditoHipotecarioFamiliar
+    c = new CreditoHipotecarioFamiliar(this)
+end note
+
+note right of ClienteGrupoFamiliar::edad
+    let edadMax = 0
+    for (let miembro of miembros) {
+        if (miembro.edad > edadMax) {
+            edadMax = miembro.edad
+        }
+    }
+    return edadMax
+end note
+
+note right of ClienteGrupoFamiliar::ingresosCertificados
+    let ingresos = 0
+    for (let miembro of miembros) {
+        ingresos += miembro.ingresosCertificados
+    }
+    return ingresos
+end note
+
+note right of ClienteGrupoFamiliar::ingresosNetos
+    let ingresos = 0
+    for (let miembro of miembros) {
+        ingresos += miembro.ingresosNetos
+    }
+    return ingresos
+end note
+
+note left of VerificadorCredito::verificarEdad
+    return credito.cliente.edad <= credito.edadMaxima
+end note
+
+note left of VerificadorCredito::verificarMonto
+    return credito.monto <= credito.montoMaximo
+end note
+
+note left of VerificadorCredito::verificarPlazo
+    return credito.plazos.includes(credito.plazo)
+end note
+
+note left of VerificadorCredito::verificarRelacionCuotaIngresos
+    return credito.cuota <= credito.cliente.ingresosNetos * credito.relacionCuotaIngresos
+end note
+
+note left of VerificadorCredito::verificarCredito
+    return verificarEdad() && verificarMonto() && verificarPlazo() && verificarRelacionCuotaIngresos()
+end note
+
+@enduml

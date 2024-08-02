@@ -1,0 +1,113 @@
+@startuml
+
+title "Ejercicio centro médico"
+
+abstract class BaseSanitaria {
+    # nombre: string
+    # direccion: string
+    # tiempoMedioAsistencia: number
+
+    + get nombre(): string
+    + get direccion(): string
+    + get tiempoMedioAsistencia(): number
+    + abstract getTotalPersonal(): number
+    + getTotalAmbulancias(): number
+}
+
+
+class Hospital extends BaseSanitaria {
+    - personal: Empleado[]
+    - ambulancias: Ambulancia[]
+
+    + getTotalPersonal(): number
+    + getTotalAmbulancias(): number
+}
+class UnidadAtencionPrimaria extends BaseSanitaria {
+    - personal: Empleado[]
+
+    + getTotalPersonal(): number
+}
+class UnidadAdministrativa extends BaseSanitaria {
+    - bases: BaseSanitaria[]
+
+    + getTotalPersonal(): number
+    + getTotalAmbulancias(): number
+    + agregarBase(base: BaseSanitaria): void
+    + eliminarBase(base: BaseSanitaria): void
+    + get tiempoMedioAsistencia(): number
+}
+
+class Empleado {}
+class Ambulancia {}
+
+' Notas
+note right of BaseSanitaria::getTotalAmbulancias
+    public getTotalAmbulancias(): number {
+        return 0;
+    }
+end note
+
+note right of Hospital::getTotalPersonal
+    public getTotalPersonal(): number {
+        return this.personal.length;
+    }
+end note
+
+note right of Hospital::getTotalAmbulancias
+    public getTotalAmbulancias(): number {
+        return this.ambulancias.length;
+    }
+end note
+
+note right of UnidadAtencionPrimaria::getTotalPersonal
+    public getTotalPersonal(): number {
+        return this.personal.length;
+    }
+end notes
+
+note right of UnidadAdministrativa::getTotalPersonal
+    public getTotalPersonal(): number {
+        let total = 0;
+        for (let base of this.bases) {
+            total += base.getTotalPersonal();
+        }
+        return total;
+    }
+
+    ' Otra forma de hacerlo con Reduce
+    public getTotalPersonal(): number {
+        return this.bases.reduce((total, base) => total + base.getTotalPersonal(), 0);
+    }
+end note
+
+note right of UnidadAdministrativa::getTotalAmbulancias
+    public getTotalAmbulancias(): number {
+        let total = 0;
+        for (let base of this.bases) {
+            total += base.getTotalAmbulancias();
+        }
+        return total;
+    }
+
+    ' Otra forma de hacerlo con Reduce
+    public getTotalAmbulancias(): number {
+        return this.bases.reduce((total, base) => total + base.getTotalAmbulancias(), 0);
+    }
+end note
+
+note right of UnidadAdministrativa::tiempoMedioAsistencia
+    public get tiempoMedioAsistencia(): number {
+        let total = 0;
+        for (let base of this.bases) {
+            total += base.tiempoMedioAsistencia;
+        }
+        return total / this.bases.length;
+    }
+
+    ' Otra forma de hacerlo con Reduce
+    public get tiempoMedioAsistencia(): number {
+        return this.bases.reduce((total, base) => total + base.tiempoMedioAsistencia, 0) / this.bases.length;
+    }
+end note
+
+@enduml

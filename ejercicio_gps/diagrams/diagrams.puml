@@ -1,0 +1,42 @@
+@startuml
+
+title Ejercicio GPS
+
+
+interface ICentralMonitoreo {
+    + actualizarPosicion(id : string, posicion : Posicion) : void
+}
+
+class CentralMonitoreo implements ICentralMonitoreo {
+    - HashMap<string, Posicion> modulos
+
+    + actualizarPosicion(id : string, posicion : Posicion) : void
+}
+
+class Modulo {
+    - id : String
+    - satelites : Satelite[]
+    - centralesMonitoreo : CentralMonitoreo[]
+    - posicion : Posicion;
+
+    + obtenerSalites() : Satelite[];
+    + obtenerPosicion() : Posicion;
+    + notificarPosicion() : void;
+}
+
+class Posicion {
+    - latitud : double
+    - longitud : double
+
+    + getLatitud() : double
+    + getLongitud() : double
+}
+
+class Satelite{
+
+}
+
+' relaciones
+CentralMonitoreo o-r-> Modulo
+
+@enduml

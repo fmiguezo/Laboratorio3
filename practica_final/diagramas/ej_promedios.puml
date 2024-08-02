@@ -1,0 +1,57 @@
+@startuml
+
+title "Ejercicio promedios"
+
+class Alumno {
+    - nombre: string
+    - apellido: string
+    - edad: number
+    - carrera: Carrera
+    - notas: Map<Materia, nota>
+
+    + calcularPromedio() : number
+}
+
+note right of Alumno::calcularPromedio
+    public calcularPromedio() : number {
+        let suma = 0;
+        let cantidad = 0;
+        for (let nota of notas.values()) {
+            suma += nota;
+            cantidad++;
+        }
+        return suma / cantidad;
+    }
+
+    ' Otra forma de hacerlo
+    public calcularPromedio() : number {
+        return Array.from(notas.values()).reduce((a, b) => a + b) / notas.size;
+    }
+end note
+
+class Carrera {
+    - nombre: string
+    - materias: Materia[]
+    - alumnos: Alumno[]
+
+    + obtenerPromedios() : Map<Alumno, number>
+}
+
+note right of Carrera::obtenerPromedios
+    public obtenerPromedios() : Map<Alumno, number> {
+        let promedios = new Map();
+        for (let alumno of alumnos) {
+            promedios.set(alumno, alumno.calcularPromedio());
+        }
+        return promedios;
+    }
+
+    ' Otra forma de hacerlo
+    public obtenerPromedios() : Map<Alumno, number> {
+        return new Map(alumnos.map(alumno => [alumno, alumno.calcularPromedio()]));
+    }
+end note
+
+class Materia {}
+
+@enduml

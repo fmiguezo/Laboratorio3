@@ -1,0 +1,293 @@
+@startuml
+
+title "Parcial 1 Labo"
+
+class Aplicacion {
+    - mensajeros: Mensajero[]
+    - pedidos: Pedido[]
+    - clientes: Cliente[]
+    - director: Director
+
+    + agregarMensajero(mensajero: Mensajero): void
+    + agregarPedido(pedido: Pedido): void
+    + agregarCliente(cliente: Cliente): void
+
+    + asignarVehiculo(mensajero: Mensajero, vehiculo: Vehiculo): void
+    + asignarMensajero(pedido: Pedido): void
+    + asignarMensajeros(): void
+
+    + crearCliente(nombre: string, direccion: string, telefono: string): Cliente
+    + crearPedido(cliente: Cliente, pesoPaquete: number, origen: string, destino: string): Pedido
+    + crearMensajero(nombre: string, perfil: PerfilMensajero, caracter: CaracterMensajero): Mensajero
+
+    + obtenerMensajeroConMasPedidos(): Mensajero
+    + obtenerCantidadPedidosPerdidos(): number
+    + obtenerMensajerosSinViajes(): Mensajero[]
+
+    + getters y setters()
+}
+
+note right of Aplicacion::obtenerMensajeroConMasPedidos
+    public obtenerMensajeroConMasPedidos(): Mensajero {
+        ' reduce compara la cantidad de pedidos de cada mensajero y devuelve el que tiene mas
+        return mensajeros.reduce((a, b) => a.cantPedidos > b.cantPedidos ? a : b);
+    }
+end note
+
+note right of Aplicacion::obtenerCantidadPedidosPerdidos
+    public obtenerCantidadPedidosPerdidos(): number {
+        ' filter los pedidos perdidos y devuelve la cantidad
+        return pedidos.filter(pedido => pedido.estado.tipoEstado === TipoEstadoPedido.PERDIDO).length;
+    }
+end note
+
+note right of Aplicacion::obtenerMensajerosSinViajes
+    public obtenerMensajerosSinViajes(): Mensajero[] {
+        ' filter los mensajeros que no tienen pedidos y devuelve la lista
+        return mensajeros.filter(mensajero => mensajero.cantPedidos === 0);
+    }
+end note
+
+
+class Pedido {
+    - estado: EstadoPedido
+    - codigo: string
+    - cliente: Cliente
+    - pesoPaquete: number
+    - origen: string
+    - destino: string
+
+    + cambiarEstado(estado: EstadoPedido): void
+    + calcularDistancia(): number
+}
+
+interface EstadoPedido {}
+
+class Gestionado implements EstadoPedido {
+    - tipoEstado = TipoEstadoPedido.GESTIONADO
+}
+
+class Solicitado implements EstadoPedido {
+    - tipoEstado = TipoEstadoPedido.SOLICITADO
+}
+
+class Perdido implements EstadoPedido {
+    - tipoEstado = TipoEstadoPedido.PERDIDO
+}
+
+enum TipoEstadoPedido {
+    GESTIONADO,
+    SOLICITADO,
+    PERDIDO
+}
+
+class Mensajero {
+    - vehiculo: Vehiculo
+    - nombre: string
+    - perfil: PerfilMensajero
+    - caracter: CaracterMensajero
+    - cantPedidos: number = 0;
+
+    + aceptarPedido(p: Pedido): boolean
+    + cambiarCaracter(caracter: CaracterMensajero): void
+    + cambiarPerfil(perfil: PerfilMensajero): void
+    + getters y setters()
+}
+
+interface CaracterMensajero {
+    + aceptarPedido(pedido: Pedido): boolean
+}
+
+class Confiado implements CaracterMensajero {
+    ' Acepta todos los pedidos
+    + aceptar(pedido: Pedido): boolean
+}
+
+class Desconfiado implements CaracterMensajero {
+    ' Acepta solo pedidos de clientes con una cantidad minima de pedidos
+    - cantidadMinimaPedidos: number    
+
+    + aceptar(pedido: Pedido): boolean
+}
+
+interface PerfilMensajero {
+    + aceptar(pedido: Pedido): boolean
+}
+
+class Desesperado implements PerfilMensajero {
+    ' Tomas los pedidos sin importar los km
+
+    + aceptar(pedido: Pedido): boolean
+}
+
+class Exquisito implements PerfilMensajero {
+    ' Toma solo los de mas de 15 km
+
+    + aceptar(pedido: Pedido): boolean
+}
+
+class Moderado implements PerfilMensajero {
+    ' Toma solo los de mas de X km
+    - distanciaMinima: number
+
+    + aceptar(pedido: Pedido): boolean
+}
+
+class Vehiculo {
+    - capacidad: number
+}
+
+class Cliente {
+    - nombre: string
+    - direccion: string
+    - telefono: string
+    - pedidos: Pedido[]
+}
+
+' builders
+
+class ClienteBuilder {
+    - cliente: Cliente
+
+    + setNombre(nombre: string): void
+    + setDireccion(direccion: string): void
+    + setTelefono(telefono: string): void
+    + reiniciar(): void
+    + build(): Cliente
+}
+
+class PedidoBuilder {
+    - pedido: Pedido
+
+    + setCliente(cliente: Cliente): void
+    + setPesoPaquete(peso: number): void
+    + setOrigen(origen: string): void
+    + setDestino(destino: string): void
+    + reiniciar(): void
+    + build(): Pedido
+}
+
+class MensajeroBuilder {
+    - mensajero: Mensajero
+
+    + setNombre(nombre: string): void
+    + setPerfil(perfil: PerfilMensajero): void
+    + setCaracter(caracter: CaracterMensajero): void
+    + reiniciar(): void
+    + build(): Mensajero
+}
+
+
+' notas
+
+note bottom of Confiado
+    public aceptar(pedido: Pedido): boolean {
+        return true;
+    }
+end note
+
+note bottom of Desconfiado
+    public aceptar(pedido: Pedido): boolean {
+        return pedido.cliente.pedidos.length > this.cantidadMinimaPedidos;
+    }
+end note
+
+note bottom of Desesperado
+    public aceptar(pedido: Pedido): boolean {
+        return true;
+    }
+end note
+
+note bottom of Exquisito
+    public aceptar(pedido: Pedido): boolean {
+        return pedido.calcularDistancia() > 15;
+    }
+end note
+
+note bottom of Moderado
+    public aceptar(pedido: Pedido): boolean {
+        return pedido.calcularDistancia() > this.distanciaMinima;
+    }
+end note
+
+note left of Aplicacion::crearCliente
+    public crearCliente(nombre: string, direccion: string, telefono: string): Cliente {
+        const builder = new ClienteBuilder();
+        builder.reiniciar();
+        builder.setNombre(nombre);
+        builder.setDireccion(direccion);
+        builder.setTelefono(telefono);
+        return builder.build();
+    }
+end note
+
+note left of Mensajero::aceptarPedido
+    public aceptarPedido(p: Pedido): boolean {
+        return this.perfil.aceptar(pedido) && this.caracter.aceptar(pedido) 
+        && this.vehiculo.capacidad >= pedido.pesoPaquete;
+    }
+end note
+
+note left of Aplicacion::crearPedido
+    public crearPedido(cliente: Cliente, pesoPaquete: number, origen: string, destino: string): Pedido {
+        const builder = new PedidoBuilder();
+        builder.reiniciar();
+        builder.setCliente(cliente);
+        builder.setPesoPaquete(pesoPaquete);
+        builder.setOrigen(origen);
+        builder.setDestino(destino);
+        return builder.build();
+    }
+end note
+
+note left of Aplicacion::crearMensajero
+    public crearMensajero(nombre: string, perfil: PerfilMensajero, caracter: CaracterMensajero): Mensajero {
+        const builder = new MensajeroBuilder();
+        builder.reiniciar();
+        builder.setNombre(nombre);
+        builder.setPerfil(perfil);
+        builder.setCaracter(caracter);
+        return builder.build();
+    }
+end note
+
+note left of Aplicacion::asignarMensajero
+    public asignarMensajero(pedido: Pedido): void {
+        mensajeros.forEach(mensajero => {
+            if (mensajero.aceptarPedido(pedido)) {
+                pedido.cambiarEstado(new Gestionado());
+                mensajero.cantPedidos++;
+                return;
+            }
+            pedidos.cambiarEstado(new Perdido())
+        });
+    }
+end note
+
+note left of Aplicacion::asignarMensajeros
+    public asignarMensajeros(): void {
+        pedidos.forEach(pedido => {
+            if (pedido.estado.tipoEstado === TipoEstadoPedido.SOLICITADO) {
+                asignarMensajero(pedido);
+            }
+        });
+    }
+end note
+
+' relaciones
+Mensajero o-- Vehiculo
+Mensajero *-- PerfilMensajero
+Mensajero *-- CaracterMensajero
+Pedido *-- EstadoPedido
+Pedido *-- Cliente
+Cliente o-- Pedido
+Aplicacion o-- Mensajero
+Aplicacion o-- Pedido
+Aplicacion o-- Cliente
+ClienteBuilder o--> Cliente
+PedidoBuilder o--> Pedido
+MensajeroBuilder o--> Mensajero
+Aplicacion --> ClienteBuilder
+Aplicacion --> PedidoBuilder
+Aplicacion --> MensajeroBuilder
+@enduml

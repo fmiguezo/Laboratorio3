@@ -1,0 +1,4 @@
+export const VAGON_ANCHO_PROMEDIO = 2.5;
+export const MULTIPLICADOR_ANGOSTO = 8;
+export const MULTIPLICADOR_ANCHO = 10;
+export const PESO_PROMEDIO_PERSONA = 80;

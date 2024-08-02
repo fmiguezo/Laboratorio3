@@ -1,0 +1,271 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+class Hotel {
+    - habitaciones: Habitacion[]
+    - reservas: Reserva[]
+
+    '+reservar()
+}
+
+class Cliente {}
+
+interface ICreadorReservas {
+    + setFechaIngreso(fecha: Date): void
+    + setFechaEgreso(fecha: Date): void
+    + setCliente(cliente: Cliente): void
+    + setCantidadDias(): void
+    + setTemporada() : void
+    + agregarHabitacion(habitacion: Habitacion, regimen: RegimenAlimenticio): void
+    + eliminarHabitacion(habitacion: Habitacion): void
+    + setHabitaciones(habitaciones: Habitacion[]): void
+    + setPrecio(calc: CalculadorPrecio): void
+    + reiniciar(): void
+    + reiniciar(): void
+}
+
+class CreadorReservas implements ICreadorReservas {
+    - fechaIngreso: Date
+    - fechaEgreso: Date
+    - cliente: Cliente
+    - habitaciones: Habitacion[]
+    - precio: float
+    - cantidadDias: int
+    - temporada: Temporada
+
+    + setFechaIngreso(fecha: Date): void
+    + setFechaEgreso(fecha: Date): void
+    + setCliente(cliente: Cliente): void
+    + setCantidadDias(): void
+    + setTemporada() : void
+    + agregarHabitacion(habitacion: Habitacion, regimen: RegimenAlimenticio): void
+    + eliminarHabitacion(habitacion: Habitacion): void
+    + setHabitaciones(habitaciones: Habitacion[]): void
+    + setPrecio(calc: CalculadorPrecio): void
+    + reiniciar(): void
+    + crearReserva(): Reserva
+}
+
+note left of CreadorReservas::setCantidadDias
+    public int calcularDias() {
+        return fechaEgreso - fechaIngreso;
+    }
+end note
+
+note right of CreadorReservas::agregarHabitacion
+    try {
+        habitacion.seleccionar();
+        habitacion.setRegimen(regimen);
+        habitacionesReservadas.add(habitacion);
+    } catch (YaReservadaException e) {
+        e.getMessage();
+    } catch (RuntimeException e) {
+        e.getMessage();
+    } catch (Exception e) {
+        e.getMessage();
+    }
+
+end note
+
+note right of CreadorReservas::quitarHabitacion
+    try {
+        habitacionesReservadas.remove(habitacion);
+        habitacion.cambiarEstado();
+    } catch (YaReservadaException e) {
+        e.getMessage();
+    catch (RuntimeException e) {
+        e.getMessage();
+    } catch (Exception e) {
+        e.getMessage();
+    }
+end note
+
+
+note right of CreadorReservas::setTemporada
+    if (reserva.getFechaInicio().getMonth() >= 4 && reserva.getFechaInicio().getMonth() <= 9) {
+        temporada = new TemporadaBaja();
+    } else {
+        temporada = new TemporadaAlta();
+    }
+end note
+
+class Reserva {
+    - fechaIngreso: Date
+    - fechaEgreso: Date
+    - cliente: Cliente
+    - habitaciones: Habitacion[]
+    - precio: float
+    - cantidadDias: int
+    - temporada: Temporada
+}
+
+abstract class Habitacion {
+    # cantMaxPersonas: int
+    # tipo: TipoHabitacion
+    # estado: EstadoHabitacion
+    # regimen: RegimenAlimenticio
+    # precio: float
+
+    + getPrecio(): float
+    + setRegimen(regimen: RegimenAlimenticio): void
+    + getRegimen(): RegimenAlimenticio
+}
+
+interface EstadoHabitacion {
+    + seleccionar() : void
+    + cambiarEstado(): void
+}
+
+class Disponible implements EstadoHabitacion {
+    - estado: EstadoHabitacion
+    + seleccionar() : void
+    + cambiarEstado(): void
+}
+
+note bottom of Disponible
+    public void seleccionar() {
+        cambiarEstado(new Reservada());
+    }
+end note
+
+note bottom of Disponible
+    public void cambiarEstado() {
+        estado = new Reservada();
+    }
+end note
+
+class Reservada implements EstadoHabitacion {
+    - estado: EstadoHabitacion
+    + seleccionar() : void
+    + cambiarEstado(): void
+}
+
+note bottom of Reservada
+    public void seleccionar() {
+        throw new YaReservadaException("La habitación ya está reservada");
+    }
+end note
+
+note bottom of Reservada
+    public void cambiarEstado() {
+        cambiarEstado(new Disponible());
+    }
+end note
+
+
+class Simple extends Habitacion {
+    ' 100
+    - precio: float
+}
+
+class Doble extends Habitacion {
+    ' 250
+    - precio: float
+}
+
+class Suite extends Habitacion {
+    ' 500
+    - precio: float
+}
+
+abstract class RegimenAlimenticio {
+    # habitacion: Habitacion
+    # precio: float
+
+    + calcularPrecio(): float
+}
+
+note bottom of RegimenAlimenticio
+    public float calcularPrecio() {
+        return habitacion.getPrecioBase() * precio;
+    }
+end note
+
+class SoloAlojamiento extends RegimenAlimenticio {
+    ' 0% valor habitacion
+    - precio: float
+}
+
+class MediaPension extends RegimenAlimenticio {
+    ' 25% valor habitacion
+    - precio: float
+}
+
+class PensionCompleta extends RegimenAlimenticio {
+    ' 75% valor habitacion
+    - precio: float
+}
+
+interface Temporada {
+    + calcularPrecio(reserva: Reserva): float
+}
+
+class TemporadaBaja implements Temporada {
+    - multiplicador: float
+
+    ' (precio de la habitación + régimen / 2) * días * 1.10
+    + calcularPrecio(reserva: Reserva): float
+}
+
+note right of TemporadaBaja::multiplicador
+    1.10
+end note
+
+note right of TemporadaBaja::calcularPrecio
+    public float calcularPrecio(Reserva reserva) {
+        float precioFinal = 0;
+        for (Habitacion habitacion : reserva.getHabitacionesReservadas()) {
+            precioFinal += habitacion.getPrecio() + habitacion.getRegimen().calcularPrecio() / 2;
+        }
+        return precioFinal * reserva.calcularDias() * multiplicador;
+    }
+end note
+
+class TemporadaAlta implements Temporada {
+    - multiplicador: float
+
+    ' (precio de la habitación + régimen) * días * 1.20
+    + calcularPrecio(reserva: Reserva): float
+}
+
+note left of TemporadaAlta::multiplicador
+    1.20
+end note
+
+note left of TemporadaAlta::calcularPrecio
+    public float calcularPrecio(Reserva reserva) {
+        float precioFinal = 0;
+        for (Habitacion habitacion : reserva.getHabitacionesReservadas()) {
+            precioFinal += habitacion.getPrecio() + habitacion.getRegimen().calcularPrecio();
+        }
+        return precioFinal * reserva.calcularDias() * multiplicador;
+    }
+end note
+
+class CalculadorPrecio {
+    - temporada: EstrategiaTemporada
+
+    + calcularPrecio(reserva: Reserva): float
+}
+
+note right of CalculadorPrecio::calcularPrecio
+    return temporada.calcularPrecio(reserva);
+end note
+
+'relaciones
+Hotel *-- Habitacion
+Hotel o-- Reserva
+Habitacion o-- EstadoHabitacion
+Habitacion o--o RegimenAlimenticio
+Reserva o-- Cliente
+CalculadorPrecio *-- Temporada
+Reserva o-- RegimenAlimenticio
+CreadorReservas --> Reserva
+CreadorReservas o-- Cliente
+CreadorReservas o-- Habitacion
+CreadorReservas o-- RegimenAlimenticio
+CreadorReservas o-- CalculadorPrecio
+CreadorReservas o-- Temporada
+Hotel --> CreadorReservas
+
+@enduml

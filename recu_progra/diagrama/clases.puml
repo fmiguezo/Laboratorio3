@@ -1,0 +1,105 @@
+/'
+Una galería de arte quiere hacer una exposición a fin de año y necesita clasificar sus obras entre las que son clásicas y las que no. De cada obra se conoce su autor y año de publicación. El museo cuenta con pinturas y esculturas.
+Las pinturas se consideran clásicas si: 
+-Su autor es reconocido
+-Si su autor no es reconocido, pero el año de publicación es anterior a 1950 y cuenta con más de 10 obras en su repertorio
+Las esculturas se consideran clásicas si: 
+-Fueron realizadas entre los siglos III y XVII
+-Si no fueron realizadas entre esos siglos, pero su material de construcción es porcelana o cristal
+-Si las hizo un autor reconocido
+Se pide realizar diagrama de clases y los métodos que le permitan a la galería diferenciar las obras clásicas de las que no lo son
+'/
+
+@startuml
+'https://plantuml.com/class-diagram
+
+title "Recuperatorio Programacion"
+skinparam Linetype ortho
+
+class Galeria {
+    -obras: Obra[]
+    -obrasClasicas: Obra[]
+    -obrasNoClasicas: Obra[]
+
+    + agregarObra(Obra): void
+    + eliminarObra(Obra): void
+    + clasificarObras(): void
+    + getters y setters
+}
+
+note left of Galeria::clasificarObras
+    /'
+    Agrega una obra a la galería
+    '/
+    obras.forEach(obra => {
+        if(obra.esClasica()) {
+            this.obrasClasicas.push(obra);
+        } else {
+            this.obrasNoClasicas.push(obra);
+        }
+    });
+end note
+
+
+abstract class Obra {
+    # autor: Autor
+    # anioPublicacion: int
+
+    + abstract esClasica(): bool
+    + getters y setters
+}
+
+class Autor {
+    -nombre: string
+    -esReconocido: bool
+    -repertorio: Obra[]
+
+    + getters y setters
+}
+
+class Pintura extends Obra {
+    + esClasica(): bool	
+}
+
+note bottom of Pintura
+    /'
+    Si el autor es reconocido o el año de publicación es anterior a 1950 y cuenta con más de 10 obras en su repertorio
+    '/
+    public esClasica(): bool {
+        return this.autor.esReconocido || 
+        (this.anioPublicacion < 1950 and this.autor.repertorio.length > 10)
+    }
+end note
+
+
+class Escultura extends Obra {
+    -material: string
+
+    - calcularSiglo(): int  
+    + esClasica(): bool
+}
+
+
+note bottom of Escultura
+    /'
+    Calcula el siglo en el que fue realizada la escultura
+    '/
+    public calcularSiglo(): int {
+        return this.anioPublicacion / 100 + 1;
+    }
+
+    /'
+    Si fue realizada entre los siglos III y XVII, si no fue realizada entre esos siglos, pero su material de construcción es porcelana o cristal o si las hizo un autor reconocido
+    '/
+    public esClasica(): bool {
+        return (this.calcularSiglo() >= 3 and this.calcularSiglo() <= 17) 
+        || (this.material == "porcelana" or this.material == "cristal")
+        || this.autor.esReconocido;
+    }
+end note
+
+'relaciones
+Obra o-r- Autor
+Galeria o-- Obra
+
+@enduml

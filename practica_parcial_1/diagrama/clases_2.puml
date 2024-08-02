@@ -1,0 +1,96 @@
+/'
+Ejercicio 2
+Se desea implementar un sistema de archivos para un sistema operativo mediante el uso de objetos.
+Para ello, se tendrá en cuenta los siguientes elementos:
+
+● Archivos normales: se almacena su nombre y tamaño (Los mismos se definen al
+momento de creación del objeto).
+● Directorios se almacena su nombre, mientras que su tamaño será la suma de los
+tamaños de los ficheros que contiene. Los directorios se crean vacíos pero se les
+pueden añadir otros ficheros en cualquier momento.
+● Links: se almacena su nombre, pero su tamaño será en todo momento el tamaño del
+fichero, directorio o «link» al que están conectados.
+
+Se pide:
+1. Elabore un diagrama de clases correspondiente.
+2. Codifique los métodos que permitan
+a. Agregar archivos a un directorio
+b. Eliminar archivos de un directorio
+c. Obtener el tamaño de un directorio. Los links no incrementan el tamaño de un directorio.
+'/
+
+@startuml
+
+skinparam Linetype ortho
+title Ejercicio 2
+
+abstract class Elemento {
+    # nombre: string
+    # tamanio: number
+
+    + set nombre(nombre: string): void
+    + get nombre(): string
+    + get tamanio(): number
+}
+
+class Link extends Elemento {
+
+    - elemento: Elemento
+
+    + Link(nombre: string, e: Elemento)
+    + override get tamanio(): number
+    + get tamanioElemento(): number
+}
+
+class Directorio extends Elemento {
+    - elementos: Elemento[]
+
+    + Directorio(nombre: string)
+    + agregarElemento(e: Elemento): void
+    + eliminarElemento(e: Elemento): void
+    + override get tamanio(): void
+}
+
+class Archivo extends Elemento {
+    - tamanio: number
+
+    + Archivo(nombre: string, tamaño: number)
+}
+
+
+' notas
+note bottom of Link
+    public override get tamanioInterno(): number {
+        return elemento.tamanio
+    }
+
+    public override get tamanio(): number {
+        return 0;
+    }
+end note
+
+note left of Directorio::agregarElemento
+    public agregarElemento(e: Elemento): void {
+        elementos.push(e)
+    }
+end note
+
+note left of Directorio::eliminarElemento
+    public eliminarElemento(e: Elemento): void {
+        elementos = elementos.filter(el => el !== e)
+    }
+end note
+
+
+note bottom of Directorio
+    ' Obtener el tamaño de un directorio. Los links no incrementan el tamaño de un directorio.
+    public override get tamanio(): void {
+        return elementos.reduce((acc, el) => acc + el.tamaño, 0)
+    }
+end note
+
+' relaciones
+Link o-- Elemento
+Directorio o-- Elemento
+
+@enduml

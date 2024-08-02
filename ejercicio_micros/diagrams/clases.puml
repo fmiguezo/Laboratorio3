@@ -1,0 +1,73 @@
+@startuml
+
+skinparam Linetype ortho
+
+title "Diagrama de clases - Micros"
+
+enum EstadoTrabajador {
+    A_PIE
+    PARADO
+    SENTADO
+}
+
+abstract class Trabajador {
+    # legajo: int
+    # jefe: Trabajador
+    # estado: EstadoTrabajador 
+    ' si es null es jefe
+
+    + abstract quiereSubir(Micro micro): boolean
+    + esJefe()
+    + ocuparLugar()
+    + bajar()
+}
+
+class Apurado extends Trabajador {
+    + quiereSubir(Micro m): boolean
+}
+
+class Claustrofobico extends Trabajador {
+    + quiereSubir(Micro m): boolean
+}
+
+class Fiaca extends Trabajador {
+    + quiereSubir(Micro m): boolean
+}
+
+class Moderado extends Trabajador {
+    + quiereSubir(Micro m): boolean
+}
+
+class Obsecuentes extends Trabajador {
+    + quiereSubir(Micro m): boolean
+}
+
+'interface Vehiculo {
+'    + subirTrabajador(Trabajador trabajador): void
+'    + bajarTrabajador(Trabajador trabajador): void
+'    + getLugaresLibres(): int
+'}
+
+class Micro {
+    - capacidadParados: int
+    - capacidadSentados: int
+    - volumen: double
+    - patente: string
+    - pasajeros: Trabajador[]
+    - primerPasajero: Trabajador
+
+    + subirTrabajador(Trabajador trabajador): void
+    + bajarTrabajador(Trabajador trabajador): void
+    + getLugaresDisponibles(): int
+    + getAsientosDisponibles(): int
+    + getParadosDisponibles(): int
+    + getPrimerPasajero(): Trabajador
+}
+
+
+' relaciones
+
+Micro o.d. Trabajador : tiene
+EstadoTrabajador -[hidden]r- Trabajador
+
+@enduml

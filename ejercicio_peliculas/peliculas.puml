@@ -1,0 +1,71 @@
+@startuml name "Peliculas"
+title "**Peliculas**"
+skinparam Linetype ortho
+
+interface Ordernador {
+    + ordernar(Peliculas[])
+}
+
+class OrdenarPorVisualizaciones implements Ordernador {
+    + ordernar(Peliculas[])
+}
+
+class OrdenarPorFecha implements Ordernador {
+    + ordernar(Peliculas[])
+}
+
+enum CRITERIO_ORDER {
+    ASC = 1
+    DESC = -1
+}
+
+class Pelicula {
+    - titulo: string
+    - descripcion: string
+    - fechaEstreno: Date
+    - paisOrigen: string
+    - visualizaciones: int
+
+    + getter_y_setters()
+    + visualizar()
+    + getPuntaje()
+}
+
+class Fecha {
+    - dia: int
+    - mes: int
+    - anio: int
+
+    + getFecha(): String
+    + getFechaFormateada(formato: String): String
+    + diferencia(Fecha): int
+}
+
+class Cartelera {
+    - peliculas : Pelicula[]
+
+    + agregar(Pelicula)
+    + eliminar(Pelicula)
+    + contains(Pelicula)
+    + obtenerPeliculaMejorPuntuada(): Pelicula
+    '+ ordernarPorVisualizaciones(): Pelicula[]
+    '+ ordernarPorFechaEstreno(): Pelicula[]
+}
+
+class Impresora {
+    - ordenador: Ordernador
+
+    + constructor(Ordenador)
+    + imprimirListado(Pelicula[])
+}
+
+' relaciones
+Pelicula o.r. Fecha
+Cartelera *-- Pelicula
+Impresora <-r- Pelicula
+
+CRITERIO_ORDER -r[hidden]- Cartelera
+
+Ordenador -l-* Cartelera
+
+@enduml

@@ -1,0 +1,201 @@
+@startuml
+
+title "Ejercicio micros empresariales"
+
+
+class Micro {
+    - cantParados: number
+    - cantSentados: number
+    - volumen: number
+    - pasajeros: Persona[]
+    - primerPasajero: Persona | null
+
+    + subirPersona(persona: Persona): void
+    + bajarPersona(persona: Persona): void
+    + lugaresLibres(): number
+    + lugaresLibresSentados(): number
+    + lugaresLibresParados(): number
+    + primerPasajero(): Persona | null
+}
+
+class Persona {
+    - jefe: Persona
+    - subordinados: Persona[]
+    - personalidad: Personalidad
+    - estado: 
+
+    + puedeSubirse(micro: Micro): boolean
+    - quiereSubirse(micro: Micro): boolean
+    + esJefe(): boolean
+}
+
+enum EstadoPersona {
+    PARADO,
+    SENTADO,
+    AFUERA
+}
+
+abstract class Personalidad {
+    # persona: Persona
+
+    + abstract subirse(micro: Micro): boolean
+}
+class Apurado extends Personalidad {
+    + subirse(micro: Micro): boolean
+}
+class Claustrofobico extends Personalidad {
+    + subirse(micro: Micro): boolean
+}
+class Fiaca extends Personalidad {
+    + subirse(micro: Micro): boolean
+}
+class Moderado extends Personalidad {
+    - minimoLibres: number
+
+    + subirse(micro: Micro): boolean
+}
+class Obsecuente extends Personalidad {
+    + subirse(micro: Micro): boolean
+}
+
+
+' Notas
+note right of Apurado::subirse
+    Los apurados se suben siempre
+
+    public subirse(micro: Micro): boolean {
+        return true;
+    }
+end note
+
+note right of Claustrofobico::subirse
+    Los claustrofóbicos se suben sólo si el micro tiene más de 120 m3 de volumen
+
+    public subirse(micro: Micro): boolean {
+        return micro.volumen > 120;
+    }
+end note
+
+note right of Fiaca::subirse
+    Los fiacas se suben sólo si entran sentados
+
+    public subirse(micro: Micro): boolean {
+        return micro.lugaresLibresSentados() > 0;
+    }
+end note
+
+note right of Moderado::subirse
+    Los moderados se suben sólo si quedan al menos x lugares libres (no importa si sentados o parados), donde el x es particular de cada persona moderada.
+
+    public subirse(micro: Micro): boolean {
+        return micro.lugaresLibres() >= this.minimoLibres;
+    }
+end note
+
+note right of Obsecuente::subirse
+    Los obsecuentes toman la misma decisión que tomaría su jefe (de cada empleado se sabe quién es su jefe, que es otro empleado).
+
+    public subirse(micro: Micro): boolean {
+        return this.jefe.puedeSubirse(micro);
+    }
+end note
+
+note right of Persona::esJefe
+    Devuelve true si la persona es jefe de alguien, false en caso contrario.
+
+    public esJefe(): boolean {
+        return this.subordinados.length > 0;
+    }
+end note
+
+note right of Persona::quiereSubirse
+    Devuelve true si la persona puede subirse al micro, false en caso contrario.
+
+    public subirse(micro: Micro): boolean {
+        return this.personalidad.subirse(micro);
+    }
+end note
+
+note right of Persona::puedeSubirse
+    Devuelve true si la persona puede subirse al micro, false en caso contrario.
+
+    public puedeSubirse(micro: Micro): boolean {
+        return this.quiereSubirse(micro) && micro.lugaresLibres() > 0;
+    }
+end note
+
+note right of Micro::subirPersona
+    Sube a la persona al micro si hay lugar y la persona quiere subirse.
+
+    public subirPersona(persona: Persona): void {
+        if (persona.puedeSubirse(this)) {
+            if (this.pasajeros.length === 0) {
+                this.primerPasajero = persona;
+            }
+            if (micro.lugaresLibresSentados() > 0) {
+                persona.estado = EstadoPersona.SENTADO;
+            } else {
+                persona.estado = EstadoPersona.PARADO;
+            }
+            this.pasajeros.push(persona);
+        } else {
+            throw new Error("La persona no puede subirse al micro");
+        }
+    }
+end note
+
+note right of Micro::bajarPersona
+    Baja a la persona del micro.
+
+    public bajarPersona(persona: Persona): void {
+        if (micro.pasajeros.length > 0) {
+            if (micro.pasajeros.includes(persona)) {
+                ' con Filter
+                persona.estado = EstadoPersona.AFUERA;
+                micro.pasajeros = micro.pasajeros.filter(p => p !== persona);
+            } else {
+                throw new Error("La persona no está en el micro");
+            }
+        } else {
+            throw new Error("No hay pasajeros en el micro");
+        }
+        
+    }
+end note
+
+note right of Micro::lugaresLibres
+    Devuelve la cantidad de lugares libres en el micro.
+
+    public lugaresLibres(): number {
+        return this.cantParados + this.cantSentados - this.pasajeros.length;
+    }
+end note
+
+note right of Micro::lugaresLibresSentados
+    Devuelve la cantidad de lugares libres sentados en el micro.
+
+    public lugaresLibresSentados(): number {
+        return this.cantSentados - this.pasajeros.filter(p => p.estado === EstadoPersona.SENTADO).length;
+    }
+end note
+
+note right of Micro::lugaresLibresParados
+    Devuelve la cantidad de lugares libres parados en el micro.
+
+    public lugaresLibresParados(): number {
+        return this.cantParados - this.pasajeros.filter(p => p.estado === EstadoPersona.PARADO).length;
+    }
+end note
+
+note right of Micro::primerPasajero
+    Devuelve la primera persona que se subió al micro, o null si no hay nadie.
+
+    public primerPasajero(): Persona | null {
+        if (this.pasajeros.length === 0) {
+            primerPasajero = null;
+        }
+        return this.primerPasajero;
+    }
+end note
+
+@enduml

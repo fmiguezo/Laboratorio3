@@ -1,0 +1,370 @@
+@startuml
+
+title "Ejercicio trenes"
+
+class Deposito {
+    ' Tiene formaciones
+    ' Tiene locomotoras
+    - formaciones: Formacion[]
+    - locomotoras: Locomotora[]
+
+    + agregarFormacion(formacion: Formacion): void
+    + agregarLocomotora(locomotora: Locomotora): void
+    + eliminarFormacion(formacion: Formacion): void
+    + eliminarLocomotora(locomotora: Locomotora): void
+    + agregarLocomotoraAFormacion(formacion: Formacion): void
+    + obtenerLocomotorasDisponibles(): Locomotora[]
+    + obtenerConjuntoMasPesado(): Vagon[]
+    + necesitaConductorExperimentado(): boolean
+
+    ' Punto 7
+    ' 7. Dado un depósito, el conjunto formado por el vagón más pesado de cada formación; se espera un conjunto de vagones.
+    ' Punto 8
+    ' 8. Si un depósito necesita un conductor experimentado. Un depósito necesita un conductor experimentado si alguna de sus formaciones es compleja. 
+}
+
+note right of Deposito::obtenerLocomotorasDisponibles
+    public obtenerLocomotorasDisponibles(): Locomotora[] {
+        if (this.locomotoras.length > 0) {
+            return this.locomotoras;
+        } else {
+            throw new Error('No hay locomotoras disponibles');
+        }
+    }
+end note
+
+note right of Deposito::agregarLocomotoraAFormacion
+    public agregarLocomotoraAFormacion(formacion: Formacion): void {
+        try {
+            formacion.agregarLocomotora(this.locomotoras[0]);
+        } catch (e) {
+            console.log(e);
+        }
+    }
+end note
+
+note right of Deposito::obtenerConjuntoMasPesado
+    public obtenerConjuntoMasPesado(): Vagon[] {
+        let conjuntoMasPesado: Vagon[] = [];
+        for (let formacion of this.formaciones) {
+            let vagonMasPesado = formacion.vagones[0];
+            for (let vagon of formacion.vagones) {
+                if (vagon.obtenerPesoMaximo() > vagonMasPesado.obtenerPesoMaximo()) {
+                    vagonMasPesado = vagon;
+                }
+            }
+            conjuntoMasPesado.push(vagonMasPesado);
+        }
+        return conjuntoMasPesado;
+    }
+
+    ' con Reduce
+    public obtenerConjuntoMasPesado(): Vagon[] {
+        return this.formaciones.map(formacion => formacion.vagones.reduce((a, b) => a.obtenerPesoMaximo() > b.obtenerPesoMaximo() ? a : b));
+    }
+
+    ' Map y Reduce hacen:
+    ' reduce: para cada formación, obtiene el vagon más pesado
+    ' map: devuelve un array con los vagones más pesados
+end note
+
+note right of Deposito::necesitaConductorExperimentado
+    public necesitaConductorExperimentado(): boolean {
+        for (let formacion of this.formaciones) {
+            if (formacion.esCompleja()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    ' con Reduce
+    public necesitaConductorExperimentado(): boolean {
+        return this.formaciones.reduce((a, b) => a.esCompleja() || b.esCompleja(), false);
+    }
+end note
+
+class Formacion {
+    ' Tiene una o varias locomotoras
+    ' Tiene uno o varios vagones
+    - estado: EstadoFormacion
+    - locomotoras: Locomotora[]
+    - vagones: Vagon[]
+
+    + agregarLocomotora(locomotora: Locomotora): void
+    + agregarVagon(vagon: Vagon): void
+    + eliminarLocomotora(locomotora: Locomotora): void
+    + eliminarVagon(vagon: Vagon): void
+    + cambiarEstado(estado: EstadoFormacion): void
+    + obtenerEmpujeTotal(): number
+    + obtenerEmpujeFaltante(): number
+    + obtenerTotalPasajeros(): number
+    + obtenerTotalVagonesLivianos(): number
+    + obtener velocidadMaxima(): number
+    + esEficiente(): boolean
+    + puedeMoverse(): boolean
+    + obtenerPesoMaximoVagones(): number
+    + esCompleja(): boolean
+    + obtenerPesoLocomotoras(): number
+}
+
+note right of Formacion::obtenerTotalPasajeros
+    ' Punto 1
+    ' El total de pasajeros que puede transportar una formación
+    public obtenerTotalPasajeros(): number {
+        let totalPasajeros = 0;
+        for (let vagon of this.vagones) {
+            totalPasajeros += vagon.obtenerTotalPasajeros();
+        }
+        return totalPasajeros;
+    }
+
+    ' con Reduce
+    public obtenerTotalPasajeros(): number {
+        return this.vagones.reduce((a, b) => a.obtenerTotalPasajeros() + b.obtenerTotalPasajeros(), 0);
+    }
+end note
+
+note right of Formacion::obtenerTotalVagonesLivianos
+    ' Punto 2
+    ' Cuántos vagones livianos tiene una formación; un vagón es liviano si su peso máximo es menor a 2500 kg
+    public obtenerTotalVagonesLivianos(): number {
+        return this.vagones.filter(vagon => vagon.obtenerPesoMaximo() < 2500).length;
+    }
+end note
+
+note right of Formacion::obtenerVelocidadMaxima
+    ' Punto 3
+    ' La velocidad máxima de una formación, que es el mínimo entre las velocidades máximas de las locomotoras.
+    public obtenerVelocidadMaxima(): number {
+        let velocidadMaxima = this.locomotoras[0].velocidadMaxima;
+        for (let locomotora of this.locomotoras) {
+            if (locomotora.velocidadMaxima < velocidadMaxima) {
+                velocidadMaxima = locomotora.velocidadMaxima;
+            }
+        }
+        return velocidadMaxima;
+    }
+
+    ' con Reduce
+    public obtenerVelocidadMaxima(): number {
+        return this.locomotoras.reduce((a, b) => a.velocidadMaxima < b.velocidadMaxima ? a : b).velocidadMaxima;
+    }
+end note
+
+note right of Formacion::esEficiente
+    ' Punto 4
+    ' Si una formación es eficiente; es eficiente si cada una de sus locomotoras arrastra, al menos, 5 veces su peso (el de la locomotora misma).
+    public esEficiente(): boolean {
+        for (let locomotora of this.locomotoras) {
+            if (formacion.obtenerEmpujeTotal() > locomotora.peso * 5) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    ' con Reduce
+    public esEficiente(): boolean {
+        return this.locomotoras.reduce((a, b) => formacion.obtenerEmpujeTotal() <= b.peso * 5, true);
+    }
+end note
+
+note right of Formacion::puedeMoverse
+    ' Punto 5
+    ' Si una formación puede moverse. Una formación puede moverse si el arrastre útil total de las locomotoras es mayor o igual al peso máximo total de los vagones.
+    public puedeMoverse(): boolean {
+        for (let locomotora of this.locomotoras) {
+            if (locomotora.obtenerArrastreUtil() < this.obtenerEmpujeFaltante()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    ' con Reduce
+    public puedeMoverse(): boolean {
+        return this.locomotoras.reduce((a, b) => b.obtenerArrastreUtil() >= this.obtenerEmpujeFaltante(), true);
+    }
+end note
+
+note right of Formacion::obtenerPesoMaximoVagones
+    ' Punto 6
+    ' Cuántos kilos de empuje le faltan a una formación para poder moverse, que es: 0 si ya se puede mover, y (peso máximo total de los vagones – arrastre útil total de las locomotoras) en caso contrario.
+    public obtenerPesoMaximoVagones(): number {
+        let pesoMaximoVagones = 0;
+        for (let vagon of this.vagones) {
+            pesoMaximoVagones += vagon.obtenerPesoMaximo();
+        }
+        return pesoMaximoVagones;
+    }
+    ' con Reduce
+    public obtenerPesoMaximoVagones(): number {
+        return this.vagones.reduce((a, b) => a.obtenerPesoMaximo() + b.obtenerPesoMaximo(), 0);
+    }
+end note
+
+note right of Formacion::obtenerEmpujeTotal
+    public obtenerEmpujeTotal(): number {
+        let empujeTotal = 0;
+        for (let locomotora of this.locomotoras) {
+            empujeTotal += locomotora.obtenerArrastreUtil();
+        }
+        return empujeTotal;
+    }
+
+    ' con Reduce
+    public obtenerEmpujeTotal(): number {
+        return this.locomotoras.reduce((a, b) => a.obtenerArrastreUtil() + b.obtenerArrastreUtil(), 0);
+    }
+end note
+
+note right of Formacion::obtenerEmpujeFaltante
+    public obtenerEmpujeFaltante(): number {
+        if (this.puedeMoverse()) {
+            return 0;
+        }
+        return this.obtenerPesoMaximoVagones() - this.obtenerEmpujeTotal();
+    }
+end note
+
+note right of Formacion::obtenerPesoLocomotoras
+    public obtenerPesoLocomotoras(): number {
+        let pesoLocomotoras = 0;
+        for (let locomotora of this.locomotoras) {
+            pesoLocomotoras += locomotora.peso;
+        }
+        return pesoLocomotoras;
+    }
+
+    ' con Reduce
+    public obtenerPesoLocomotoras(): number {
+        return this.locomotoras.reduce((a, b) => a.peso + b.peso, 0);
+    }
+end note
+
+note right of Formacion::esCompleja
+    ' Punto 8
+    ' Una formación es compleja si: tiene más de 20 unidades (sumando locomotoras y vagones), o el peso total (sumando locomotoras y vagones) es de más de 10000 kg.
+    public esCompleja(): boolean {
+        return this.locomotoras.length + this.vagones.length > 20 || this.obtenerPesoMaximoVagones() + this.obtenerPesoLocomotoras() > 10000;
+    }
+end note
+
+class Locomotora {
+    ' Por ejemplo, puedo tener una locomotora que pesa 1000 kg, puede arrastrar hasta 12000 kg, y su velocidad máxima es de 80 km/h. Obviamente se tiene que arrastrar a ella misma, entonces no le puedo cargar 12000 kg de vagones, solamente 11000; diremos que este es su “arrastre útil”.
+    - peso: number
+    - pesoArrastre: number
+    - velocidadMaxima: number
+
+    ' Una locomotora puede ser agregada a una formación sólo si la formación se encuentra en el depósito detenida o en depósito. Si la formación ya está en movimiento no se debe hacer nada.
+    + obtenerArrastreUtil(): number
+}
+
+note right of Locomotora::obtenerArrastreUtil
+    public obtenerArrastreUtil(): number {
+        return this.pesoArrastre - this.peso;
+    }
+end note
+
+abstract class EstadoFormacion {
+    # formacion: Formacion
+    ' Puede ser enDeposito, enMovimiento, detenida
+
+    + agregarLocomotora(locomotora: Locomotora): void
+}
+
+note right of EstadoFormacion::agregarLocomotora
+    public agregarLocomotora(locomotora: Locomotora): void {
+        if (locomotora.obtenerArrastreUtil() >= this.formacion.obtenerEmpujeFaltante()) {
+            this.formacion.agregarLocomotora(locomotora);
+        }
+    }
+end note
+
+class EnDeposito implements EstadoFormacion {
+    ' Puede ser agregada a una formación
+}
+
+class EnMovimiento implements EstadoFormacion {
+    ' No puede ser agregada a una formación
+    + agregarLocomotora(locomotora: Locomotora): void
+}
+
+note right of EnMovimiento::agregarLocomotora
+    public agregarLocomotora(locomotora: Locomotora): void {
+        ' No hace nada
+    }
+end note
+
+class Detenida implements EstadoFormacion {
+    ' Puede ser agregada a una formación
+}
+
+abstract class Vagon {
+    + obtenerTotalPasajeros(): number
+    + obtenerCargaMaxima(): number
+    + abstract obtenerPesoMaximo(): number
+}
+
+note right of Vagon::obtenerTotalPasajeros
+    public obtenerTotalPasajeros(): number {
+        return 0;
+    }
+end note
+
+note right of Vagon::obtenerCargaMaxima
+    public obtenerCargaMaxima(): number {
+        return 0;
+    }
+end note
+
+class VagonPasajeros extends Vagon {
+    ' Tiene un número de asientos
+    - largo: number
+    - anchoUtil: number
+
+    + obtenerTotalPasajeros(): number
+    + obtenerPesoMaximo(): number
+}
+
+note right of VagonPasajeros::obtenerTotalPasajeros
+    Si el ancho útil es de hasta 2.5 metros: metros de largo * 8.
+    Si el ancho útil es de más de 2.5 metros: metros de largo * 10.
+
+    public obtenerTotalPasajeros(): number {
+        if (this.anchoUtil <= 2.5) {
+            return this.largo * 8;
+        } else {
+            return this.largo * 10;
+        }
+    }
+end note
+
+note right of VagonPasajeros::obtenerPesoMaximo
+    public obtenerPesoMaximo(): number {
+        return obtenerTotalPasajeros() * 80;
+    }
+end note
+
+class VagonCarga extends Vagon{
+    ' Tiene un peso máximo
+    - cargaMaxima: number
+
+    + obtenerCargaMaxima(): number
+    + obtenerPesoMaximo(): number
+}
+
+note right of VagonCarga::obtenerCargaMaxima
+    public obtenerCargaMaxima(): number {
+        return this.cargaMaxima;
+    }
+end note
+
+note right of VagonCarga::obtenerPesoMaximo
+    public obtenerPesoMaximo(): number {
+        return this.cargaMaxima + 160;
+    }
+end note
+
+@enduml

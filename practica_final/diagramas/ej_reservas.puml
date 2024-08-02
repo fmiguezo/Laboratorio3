@@ -1,0 +1,271 @@
+@startuml
+
+title "Ejercicio Reservas"
+
+abstract class Habitacion {
+    # precio: number
+    # capacidad: number
+    # regimenesDisponibles: TipoRegimenAlimenticio[]
+    # regimen: RegimenAlimenticio
+}
+
+class HabitacionSimple extends Habitacion {
+    ' 100
+}
+
+class HabitacionDoble extends Habitacion {
+    ' 250
+}
+
+class HabitacionSuite extends Habitacion {
+    ' 500
+}
+
+interface EstadoHabitacion {
+    + reservar(): void
+}
+
+class Disponible implements EstadoHabitacion {
+    - habitacion: Habitacion
+    ' reserva y cambia estado a reservada
+    + reservar(): void  
+}
+
+class Reservada implements EstadoHabitacion {
+    - habitacion: Habitacion
+    'arroja excepcion si se intenta resevar
+    + reservar(): void
+    + cancelar(): void  
+}
+
+enum TipoRegimenAlimenticio {
+    - SOLO_ALOJAMIENTO
+    - MEDIA_PENSION
+    - PENSION_COMPLETA
+}
+
+abstract class RegimenAlimenticio {
+    # pctIncremento: number
+    # tipoRegimen: TipoRegimenAlimenticio
+
+    + calcularIncremento(habitacion: Habitacion): number
+}
+
+class SoloAlojamiento extends RegimenAlimenticio {
+    ' 0% valor habitacion
+}
+
+class MediaPension extends RegimenAlimenticio {
+    ' 25% valor habitacion
+}
+
+class PensionCompleta extends RegimenAlimenticio {
+    ' 75% valor habitacion
+}
+
+interface Temporada {
+    + calcularPrecio(habitacion: Habitacion, dias: number): number
+}
+
+class TemporadaAlta implements Temporada {
+    ' (precio de la habitación + régimen)*días * 1.20
+    + calcularPrecio(habitacion: Habitacion, dias: number): number
+}
+
+class TemporadaBaja implements Temporada {
+    ' (precio de la habitación + régimen /2)* días * 1.10
+    + calcularPrecio(): number
+}
+
+class Reserva {
+    - fechaIngreso: Date
+    - fechaEgreso: Date
+    - cliente: Cliente
+    - habitaciones: Habitacion[]
+    - precio: number
+    - temporada: Temporada
+    - dias: number
+
+    + calcularTemporada(): Temporada
+    + calcularDias(): number
+    + calcularPrecio(): number
+    + agregarHabitacion(habitacion: Habitacion): void
+}
+
+class ReservaBuilder {
+    - reserva: Reserva
+
+    + reset(): void
+    + setFechaIngreso(fechaIngreso: Date): void
+    + setFechaEgreso(fechaEgreso: Date): void
+    + setCliente(cliente: Cliente): void
+    + setHabitaciones(): void
+    + setTemporada(): void
+    + setDias(): void
+    + build(): Reserva
+}
+
+class DirectorReserva {
+    - builder: ReservaBuilder
+
+    + setBuilder(builder: ReservaBuilder): void
+    + construirReserva(fechaIngreso: Date, fechaEgreso: Date, cliente: Cliente): Reserva
+    + agregarHabitacion(habitacion: Habitacion): void
+}
+
+class Cliente {}
+
+
+' Notas
+note right of Reserva::calcularTemporada
+    Calcula la temporada en la que se encuentra la reserva
+    public calcularTemporada(): Temporada {
+        if (fechaIngreso > 15/12 && fechaEgreso < 15/03) {
+            return TemporadaAlta
+        } else {
+            return TemporadaBaja
+        }
+    }
+end note
+
+note right of Reserva::calcularDias
+    Calcula la cantidad de días de la reserva
+    public calcularDias(): number {
+        return fechaEgreso - fechaIngreso;
+    }
+end note
+
+note right of Reserva::agregarHabitacion
+    Agrega una habitación a la reserva
+    public agregarHabitacion(habitacion: Habitacion): void {
+        try {
+            habitacion.reservar();
+            habitaciones.push(habitacion);
+        } catch (e) {
+            console.log(e.message);
+        }
+    }
+end note
+
+note right of Reserva::calcularPrecio
+    Calcula el precio de la reserva
+    public calcularPrecio(): number {
+        let precio = 0;
+        temporada = calcularTemporada();
+        for (habitacion in habitaciones) {
+            precio += temporada.calcularPrecio(habitacion, calcularDias());
+        }
+    }
+    return precio;
+
+    'con ForEach
+    public calcularPrecio(): number {
+        let precio = 0;
+        temporada = calcularTemporada();
+        habitaciones.forEach(habitacion => {
+            precio += temporada.calcularPrecio(habitacion, calcularDias());
+        });
+    }
+
+    'con Reduce
+    public calcularPrecio(): number {
+        temporada = calcularTemporada();
+        return habitaciones.reduce((precio, habitacion) => precio + temporada.calcularPrecio(habitacion, calcularDias()), 0);
+    }
+end note
+
+note right of TemporadaAlta::calcularPrecio
+    Calcula el precio de la reserva en temporada alta
+    public calcularPrecio(habitacion: Habitacion, dias: number): number {
+        return (habitacion.precio + habitacion.regimen.calcularIncremento(habitacion)) * dias * 1.20;
+    }
+end note
+
+note right of TemporadaBaja::calcularPrecio
+    Calcula el precio de la reserva en temporada baja
+    public calcularPrecio(habitacion: Habitacion, dias: number): number {
+        return (habitacion.precio + habitacion.regimen.calcularIncremento(habitacion) / 2) * dias * 1.10;
+    }
+end note
+
+note right of RegimenAlimenticio::calcularIncremento
+    Calcula el incremento del precio de la habitación
+    public calcularIncremento(habitacion: Habitacion): number {
+        return habitacion.precio * pctIncremento;
+    }
+end note
+
+note right of Disponible::reservar
+    Cambia el estado de la habitación a reservada
+    public reservar(): void {
+        habitacion.estado = new Reservada();
+    }
+end note
+
+note right of Reservada::reservar
+    Lanza excepción si se intenta reservar
+    public reservar(): void {
+        throw new Error('La habitación ya está reservada');
+    }
+end note
+
+note right of Reservada::cancelar
+    Cambia el estado de la habitación a disponible
+    public cancelar(): void {
+        habitacion.estado = new Disponible();
+    }
+end note
+
+note right of ReservaBuilder::reset
+    Construye una reserva
+    public reset(): void {
+        reserva = new Reserva();
+    }
+end note
+
+note right of ReservaBuilder::setHabitaciones
+    Setea las habitaciones de la reserva
+    public setHabitaciones(): void {
+        reserva.habitaciones = new Habitacion[];
+    }
+end note
+
+note right of ReservaBuilder::setTemporada
+    Setea la temporada de la reserva
+    public setTemporada(): void {
+        reserva.temporada = reserva.calcularTemporada();
+    }
+end note
+
+note right of ReservaBuilder::setDias
+    Setea los días de la reserva
+    public setDias(): void {
+        reserva.dias = reserva.calcularDias();
+    }
+end note
+
+note right of DirectorReserva::construirReserva
+    Construye una reserva
+    public construirReserva(fechaIngreso: Date, fechaEgreso: Date, cliente: Cliente): Reserva {
+        builder.reset();
+        builder.setFechaIngreso(fechaIngreso);
+        builder.setFechaEgreso(fechaEgreso);
+        builder.setCliente(cliente);
+        builder.setHabitaciones();
+        builder.setTemporada();
+        builder.setDias();
+        return builder.build();
+    }
+end note
+
+note right of DirectorReserva::agregarHabitacion
+    Agrega una habitación a la reserva
+    public agregarHabitacion(habitacion: Habitacion): void {
+        builder.reserva.agregarHabitacion(habitacion);
+    }
+end note
+
+' Relaciones
+
+
+@enduml

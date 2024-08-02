@@ -1,0 +1,132 @@
+@startuml
+
+title "Ejercicio Gimnasio"
+
+class SistemaGimnasio {
+    - socios: Socio[]
+    - promociones: Promocion[]
+    - promoDelMes: Promocion
+    - cuotas: Cuota[]
+
+    + altaSocio(s: Socio): void
+    + agregarPromocion(p: Promocion): void
+    + eliminarPromocion(p: Promocion): void
+    + setPromoDelMes(p: Promocion): void
+    + calcularCuotas(): Map<Socio, number>
+}
+
+
+
+
+class Promocion {
+    - nombre: string
+    - actividades: Actividad[]
+    - descuento: number
+}
+
+abstract class Cuota {
+    # socio: Socio
+
+    + Cuota(s: Socio)
+    + abstract calcular(): number
+}
+
+class CuotaPaseLibre implements Cuota {
+    - precio: number
+    + calcular(): number
+}
+
+class CuotaActividades implements Cuota {
+    - calcularDescuento(p: Promocion) : number
+    + calcular(): number
+}
+
+class Socio {
+    - nombre: string
+    - apellido: string
+    - dni: string
+    - direccion: string
+    - telefono: string
+    - email: string
+    - actividades: Actividad[]
+    - tipoCuota: TipoCuota
+}
+
+enum TipoCuota {
+    PASE_LIBRE
+    ACTIVIDADES
+}
+
+class Actividad {
+    - nombre: string
+    - description: string
+    - precio: float
+    - instructor: string
+    - diasYHorarios: Map<string, string>
+}
+
+'Notas
+note right of CuotaPaseLibre::calcular
+    public calcular() : number {
+        return precio;
+    }
+end note
+
+note right of CuotaActividades::calcularDescuento
+    public calcularDescuento(p: Promocion) : number {
+        let actividades = 0;
+        for (let actividad of socio.actividades){
+            if (p.actividades.includes(actividad)){
+                actividades++;
+            }
+        }
+        if (actividades >= 2) {
+            return p.descuento;
+        } else {
+            return 0;
+        }
+    }
+end note
+
+note right of CuotaActividades::calcular
+    public calcular() : number {
+        let cuota = 0;
+        for (let actividad of socio.actividades){
+            cuota += actividad.precio;
+        }
+        return cuota -= cuota * calcularDescuento(p);
+    }
+
+    ' Otra forma de hacerlo
+    public calcular() : number {
+        return socio.actividades.reduce((cuota, actividad) => cuota + actividad.precio, 0) -= cuota * calcularDescuento(p);
+    }
+end note
+
+note right of SistemaGimnasio::altaSocio
+    public altaSocio(s: Socio) : void {
+        socios.push(s);
+    }
+    if (s.tipoCuota == TipoCuota.PASE_LIBRE) {
+        cuotas.push(new CuotaPaseLibre(s));
+    } else {
+        cuotas.push(new CuotaActividades(s));
+    }
+end note
+
+note right of SistemaGimnasio::calcularCuotas
+    public calcularCuotas() : Map<Socio, number> {
+        let cuotas = new Map<Socio, number>();
+        for (let cuota of cuotas){
+            cuotas.set(cuota.socio, cuota.calcular());
+        }
+        return cuotas;
+    }
+
+    ' Otra forma de hacerlo
+    public calcularCuotas() : Map<Socio, number> {
+        return new Map<Socio, number>(cuotas.map(cuota => [cuota.socio, cuota.calcular()]));
+    }
+end note
+
+@enduml

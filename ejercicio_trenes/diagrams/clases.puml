@@ -1,0 +1,72 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+skinparam Linetype ortho
+
+title "Diagrama de clases - Trenes"
+
+class Deposito {
+    - HashSet<Formacion> formaciones
+    - HashSet<Locomotora> locomotoras
+
+    + obtenerConjuntoMasPesado() : HashSet<Vagon>
+    + necesitaConductorExperimentado() : boolean
+    + agregarLocotomora(Formacion formacion, Locotomora locotomora) : void
+
+}
+
+enum EstadoFormacion {
+    EN_DEPOSITO
+    DETENIDA
+    EN_MARCHA
+}
+
+class Formacion {
+    - HashSet<Locomotora> locomotoras
+    - HashSet<Vagon> vagones
+    - EstadoFormacion estado
+
+    + calcularMaximolPasajeros() : int
+    + obtenerTotalVagonesLivianos() : int
+    + obtenerVelocidadMaxima() : double
+    + esEficiente() : boolean
+    + puedeMoverse() : boolean
+    + calcularEmpujeFaltante() : double
+    + esCompleja() : boolean
+    + agregarLocomotora(Locomotora) : void
+}
+
+class Locomotora {
+    - peso : double
+    - pesoMaximo : double
+    - velocidadMaxima : double
+
+    + calcularArrasteUtil() : double
+}
+
+abstract class Vagon {
+    + abstract calcularPesoMaximo() : int
+    + calcularMaximolPasajeros() : int
+}
+
+class VagonDePasajeros extends Vagon {
+    - largo : double
+    - anchoUtil : double
+
+    + calcularPesoMaximo() : int
+    + calcularCantidadMaximaDePasajeros() : int
+}
+
+class VagonDeCarga extends Vagon {
+    - cargaMaxima : double
+
+    + calcularPesoMaximo() : int
+}
+
+' relaciones
+Formacion "1" *-- "1" Locomotora : contiene
+Formacion "1" *-- "0..*" Vagon : contiene
+Deposito "1" o-- "0..*" Formacion : contiene
+Deposito "1" o-- "0..*" Locomotora : contiene
+
+@enduml

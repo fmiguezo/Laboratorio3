@@ -1,0 +1,139 @@
+@startuml
+
+
+class Aplicacion {
+    - directorPedido: DirectorPedido
+    - mailer: Mailer
+
+    + crearPedido(imagen: Imagen, indice: TipoIndice, email: string): Pedido
+    + enviarInforme(pedido: Pedido): void
+}
+
+note left of Aplicacion::crearPedido
+    const builder = new PedidoBuilder()
+    const director = new DirectorPedido(builder)
+
+    directorPedido.crearPedido(imagen, indice, email)
+    return builder.build()
+end note
+
+note left of Aplicacion::enviarInforme
+    const Informe = pedido.procesar()
+    Mailer.enviarInforme(pedido.email, Informe)
+end note
+
+class DirectorPedido {
+    - builder: PedidoBuilder
+
+    + DirectorPedido(builder: PedidoBuilder)
+    + setBuilder(builder: PedidoBuilder): void
+    + crearPedido(imagen: Imagen, indice: TipoIndice, email: string): Pedido
+    + crearPedidoNDWI(imagen: Imagen, indice: TipoIndice, email: string): void
+    + crearPedidoNDVI(imagen: Imagen, indice: TipoIndice, email: string): void
+    + crearPedidoSAVI(imagen: Imagen, indice: TipoIndice, email: string): void
+}
+
+note left of DirectorPedido::crearPedido
+    if (TipoIndice == NDWI) {
+        crearPedidoNDWI()
+    } else if (TipoIndice == NDVI) {
+        crearPedidoNDVI()
+    } else if (TipoIndice == SAVI) {
+        crearPedidoSAVI()
+    }
+end note
+
+note left of DirectorPedido::crearPedidoNDWI
+    builder.reset()
+    builder.setImagen(imagen)
+    builder.setIndice(new IndiceNormalizadoAgua())
+    builder.setEmail(email)
+end note
+
+class PedidoBuilder {
+    - pedido: Pedido
+
+    + setImagen(imagen: Imagen): PedidoBuilder
+    + setIndice(indice: Indice): PedidoBuilder
+    + setEmail(email: string): PedidoBuilder
+    + reset(): void
+    + build(): Pedido
+}
+
+class Pedido {
+    - imagen: Imagen
+    - email: string
+    - indice: Indice
+
+    + procesar(): Informe
+}
+
+note left of Pedido::procesar
+    const resultado = indice.calcular()
+    return new Informe(resultado)
+end note
+
+class Informe {
+    - resultado: number
+
+    + getResultado(): number
+}
+
+enum TipoIndice {
+    NDWI
+    NDVI
+    SAVI
+}
+
+abstract class Imagen {
+    - matrices : Matriz[]
+    - proveedor: string
+    - cantidadBandas: number
+    - ancho: number
+    - alto: number
+    - indiceR: number
+    - indiceG: number
+    - indiceB: number
+    - indiceIR: number
+    - L: number
+
+    + getMatrizR(): Matriz
+    + getMatrizG(): Matriz
+    + getMatrizB(): Matriz
+    + getMatrizIR(): Matriz
+}
+
+class Matriz {
+    - datos: number[][]
+}
+
+class ImagenSateliteA extends Imagen {}
+
+interface Indice {
+    + calcular(): number
+}
+
+class IndiceNormalizadoAgua implements Indice {
+    ' NDWI = (GREEN - IR) / (GREEN + IR)
+    + calcular(): number
+}
+class IndiceNormalizadoVegetacion implements Indice {
+    ' NDVI = (IR - RED) / (IR + RED)
+    + calcular(): number
+}
+class IndiceVegetacionAjustado implements Indice{
+    ' SAVI = ((IR - RED) / (IR + RED + L)) * (1 + L)
+    + calcular(): number
+}
+
+' RELACIONES
+Pedido *-- Imagen : contiene
+Pedido *-- Indice : contiene
+Imagen *-- Matriz : contiene
+Pedido --> Informe : genera
+Aplicacion *-- Mailer
+Aplicacion *-- DirectorPedido
+DirectorPedido *-- PedidoBuilder
+PedidoBuilder *--> Pedido : crea
+
+@enduml

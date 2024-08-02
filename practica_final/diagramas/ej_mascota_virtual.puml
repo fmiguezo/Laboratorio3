@@ -1,0 +1,122 @@
+@startuml
+
+title "Ejercicio mascota virtual"
+
+class MascotaVirtual {
+    - nivelContenta : number
+    - estado: EstadoMascota
+
+    + comer() : void
+    + jugar() : void
+}
+
+abstract class EstadoMascota {
+    # mascota: MascotaVirtual
+
+    + abstract comer() : void
+    + jugar() : void
+    - puedeJugar() : boolean
+}
+
+class Hambrienta extends EstadoMascota {
+    + comer() : void
+    + jugar() : void
+    + puedeJugar() : boolean
+}
+class Contenta extends EstadoMascota {
+    + comer() : void
+    + jugar() : void
+}
+class Aburrida extends EstadoMascota {
+    - tiempoAburrida: number
+
+    + comer() : void
+    + jugar() : void
+}
+
+' Relaciones
+MascotaVirtual *-- EstadoMascota
+
+' Notas
+note right of MascotaVirtual::comer
+    public comer() : void {
+        estado.comer();
+    }
+end note
+
+note right of MascotaVirtual::jugar
+    public jugar() : void {
+        estado.jugar();
+    }
+end note
+
+note right of Hambrienta::comer
+    Cambia a estado Contenta
+    
+    public comer() : void {
+        mascota.estado = new Contenta(mascota);
+    }
+end note
+
+note right of Contenta::comer
+    Su nivel se incrementa en una unidad
+    
+    public comer() : void {
+        mascota.nivelContenta++;
+    }
+end note
+
+note right of Aburrida::comer
+    Si hace más de 80 minutos que está aburrida, entonces se pone contenta.
+    Si está aburrida desde hace 80 minutos o menos, entonces no le pasa nada, no cambia nada.
+
+    public comer() : void {
+        if (tiempoAburrida > 80) {
+            mascota.estado = new Contenta(mascota);
+        }
+    }
+end note
+
+note right of Contenta::jugar
+    Su nivel se incrementa en dos unidades.
+    
+    public jugar() : void {
+        mascota.nivelContenta += 2;
+    }
+end note
+
+note right of Aburrida::jugar
+    Se pone contenta
+    
+    public jugar() : void {
+        mascota.estado = new Contenta(mascota);
+    }
+end note
+
+note right of Hambrienta::puedeJugar
+    Devuelve false
+
+    public puedeJugar() : boolean {
+        return false;
+    }
+end note
+
+note right of Hambrienta::jugar
+    No hace nada
+end note
+
+note right of EstadoMascota::puedeJugar
+    public puedeJugar() : boolean {
+        return true;
+    }
+end note
+
+note right of EstadoMascota::jugar
+    public jugar() : void {
+        if (puedeJugar()) {
+            mascota.estado.jugar();
+        }
+    }
+end note
+
+@enduml

@@ -1,0 +1,173 @@
+@startuml
+
+title Ejercicio 3
+
+
+class Aplicacion {
+    - sistemaOperativo: SistemaOperativo
+    - directorTareaBuilder: DirectorTareaBuilder
+
+    + crearTareaUsuario(nombre: string, prioridad: number): Tarea
+    + crearTareaSistema(nombre: string, prioridad: number): Tarea
+}
+
+note left of Aplicacion::crearTareaUsuario
+    directorTareaBuilder.cambiarBuilder(new TareaUsuarioBuilder())
+    directorTareaBuilder.crearTarea(nombre, prioridad)
+    return directorTareaBuilder.builder.build()
+end note
+
+note left of Aplicacion::crearTareaSistema
+    directorTareaBuilder.cambiarBuilder(new TareaSistemaBuilder())
+    directorTareaBuilder.crearTarea(nombre, prioridad)
+    return directorTareaBuilder.builder.build()
+end note
+
+class DirectorTareaBuilder{
+    - builder: TareaBuilder
+
+    + DirectorTareaBuilder(builder: TareaBuilder)
+    + cambiarBuilder(builder: TareaBuilder): void
+    + crearTarea(nombre: string, prioridad: number, tipo: TipoTarea): Tarea
+}
+
+note left of DirectorTareaBuilder::crearTarea
+    if (tipo === TipoTarea.USUARIO) {
+        cambiarBuilder(new TareaUsuarioBuilder())
+    } else {
+        cambiarBuilder(new TareaSistemaBuilder())
+    }
+
+    builder.reset()
+    builder.setNombre(nombre)
+    builder.setPrioridad(prioridad)
+    builder.setTipo()   
+end note
+    
+
+interface TareaBuilder {
+    + setNombre(nombre: string): void
+    + setPrioridad(prioridad: number): void
+    + setTipo(): void
+    + build(): Tarea
+}
+
+class TareaUsuarioBuilder implements TareaBuilder {
+    - tarea: TareaUsuario
+
+    + setNombre(nombre: string): void
+    + setPrioridad(prioridad: number): void
+    + setTipo(): TareaBuilder
+    + reset(): void
+    + build(): TareaUsuario
+}
+
+class TareaSistemaBuilder implements TareaBuilder {
+    - tarea: TareaSistema
+
+    + setNombre(nombre: string): void
+    + setPrioridad(prioridad: number): void
+    + setTipo(): TareaBuilder
+    + reset(): void
+    + build(): TareaSistema
+}
+
+
+class SistemaOperativo {
+    - tareas: Tarea[]
+    - algoritmo: Algoritmo
+
+    + agregarTarea(tarea: Tarea): void
+    + cambiarAlgoritmo(algoritmo: Algoritmo): void
+}
+
+abstract class Tarea {
+    ' tiempoEjecucion: cantidad de ciclos de CPU, entero
+    # nombre: string
+    # prioridad: number
+    # tiempoEjecucion: number
+    # tipo: TipoTarea
+
+    + Tarea(nombre: string, prioridad: number)
+    + getters y setters()
+}
+
+enum TipoTarea {
+    USUARIO
+    SISTEMA
+}
+
+class TareaUsuario extends Tarea {
+    - tipo: TipoTarea = TipoTarea.USUARIO
+}
+class TareaSistema extends Tarea {
+    - tipo: TipoTarea = TipoTarea.SISTEMA
+}
+
+
+interface Algoritmo {
+    + ejecutar(tareas: Tarea[]): void
+}
+
+class Alternado implements Algoritmo {}
+class Secuencial implements Algoritmo {}
+class Prioritario implements Algoritmo {}
+
+note bottom of Alternado
+    public void ejecutar(tareas: Tarea[]) {
+        let tipoUltimaTarea: TipoTarea = null
+        let ciclos: number = 0
+
+        for (i = 0; i < tareas.length; i++) {
+            let tarea: Tarea = tareas[i]
+            if (tarea.tipo === tipoUltimaTarea) {
+                aux = tarea;
+                tarea = tareas[i + 1];
+                tareas[i + 1] = aux;
+            }
+            tipoUltimaTarea = tarea.tipo;
+            ciclos++;
+            tarea.tiempoEjecucion = ciclos;
+            tareas.shift();
+        }
+end note
+
+note bottom of Secuencial
+    public void ejecutar(tareas: Tarea[]) {
+        let ciclos: number = 0
+
+        for (let tarea of tareas) {
+            if (tarea.tipo === TipoTarea.USUARIO) {
+                aux = tarea;
+                    tarea = tareas[i + 1];
+                    tareas[i + 1] = aux;
+            }
+            ciclos++;
+            tarea.tiempoEjecucion = ciclos;      
+            tarea.shift();
+        }
+    }
+end note
+
+note bottom of Prioritario
+    public void ejecutar(tareas: Tarea[]) {
+        let ciclos: number = 0
+
+        tareas.sort((a, b) => a.prioridad - b.prioridad);
+        for (let tarea of tareas) {
+            ciclos++;
+            tarea.tiempoEjecucion = ciclos;
+            tarea.shift();
+        }
+    }
+end note
+
+'relaciones
+SistemaOperativo o-- Tarea
+SistemaOperativo o-- Algoritmo
+Aplicacion o-- SistemaOperativo
+DirectorTareaBuilder o-- TareaBuilder
+Aplicacion o-- DirectorTareaBuilder
+
+
+@enduml

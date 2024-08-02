@@ -1,0 +1,397 @@
+@startuml
+
+title "Recuperatorio laboratorio 3"
+
+class Sistema {
+    - vehiculos: Vehiculo[]
+    - operarios: Operario[]
+    - incidentes: Incidente[]
+    - directorEquipo: DirectorEquipo
+    - directorIncidente: DirectorIncidente
+
+    + crearIncidente(direccion: string, estado: string, heridos: number, severidad: string): Incidente
+    + asignarEquipo(v: Vehiculo[], p: Operario[], i: Incidente): void
+}
+
+note right of Sistema::crearIncidente
+    Crea un incidente con los datos ingresados
+
+    public crearIncidente(direccion: string, estado: string, heridos: number, severidad: string): Incidente {
+        let incidente = directorIncidente.construirIncidente(direccion, estado, heridos, severidad);
+        return incidente;
+    }
+end note
+
+note right of Sistema::asignarEquipo
+    Asigna un equipo al incidente
+
+    public asignarEquipo(v: Vehiculo[], p: Operario[], i: Incidente) {
+        directorEquipo.construirEquipo(v, p, i);
+    }
+end note
+
+' Recursos:
+interface Recurso {
+    + cambiarEstado(): void
+}
+
+abstract class EstadoRecurso {
+    # recurso: Recurso
+
+    + abstract asignar(): void
+    + abstract cambiar(): void
+}
+
+class Disponible implements EstadoRecurso {
+    + asignar(): void
+    + cambiar(): void
+}
+
+note right of Disponible::asignar
+    Asigna el recurso a un incidente
+
+    public asignar() {
+        recurso.cambiar();
+    }
+end note
+
+note right of Disponible::cambiar
+    Cambia el estado del recurso a ocupado
+
+    public cambiar() {
+        recurso.cambiarEstado(new Ocupado());
+    }
+end note
+
+class Ocupado implements EstadoRecurso {
+    + asignar(): void
+    + cambiar(): void
+}
+
+note right of Ocupado::asignar
+    No se puede asignar el recurso a otro incidente
+
+    public asignar() {
+        throw new Error("El recurso ya está asignado");
+    }
+end note
+
+note right of Ocupado::cambiar
+    Cambia el estado del recurso a disponible
+
+    public cambiar() {
+        recurso.cambiarEstado(new Disponible());
+    }
+end note
+
+class Operario implements Recurso {}
+
+abstract class Vehiculo implements Recurso {
+    # estadoRecurso: EstadoRecurso
+    # tipo: TipoVehicul
+
+    + cambiarEstado(): void
+}
+class Moto extends Vehiculo {
+    - tipo: TipoVehiculo = TipoVehiculo.MOTO
+}
+class Auto extends Vehiculo {
+    - tipo: TipoVehiculo = TipoVehiculo.AUTO
+}
+class Ambulancia extends Vehiculo {
+    - tipo: TipoVehiculo = TipoVehiculo.AMBULANCIA
+}
+
+enum TipoVehiculo {
+    MOTO
+    AUTO
+    AMBULANCIA
+}
+
+' Incidente:
+class Cliente {}
+
+class Incidente {
+    - direccion: string
+    - estado: EstadoIncidente
+    - heridos: number
+    - severidad: Severidad
+    - equipo: Equipo
+}
+
+class IncidenteBuilder {
+    - incidente: Incidente
+
+    + reset(): void
+    + setDireccion(direccion: string): void`
+    + setEstado(estado: string): void
+    + setHeridos(heridos: number): void
+    + setSeveridad(severidad: string): void
+    + build(): Incidente
+}
+
+
+note right of IncidenteBuilder::setEstado
+    Asigna el estado al incidente
+
+    public setEstado(estado: string) {
+        if (estado == EstadoInc.EN_CURSO) {
+            incidente.estado = new EnCurso();
+        } else {
+            incidente.estado = new Finalizado();
+        }
+    }
+end note
+
+note right of IncidenteBuilder::setSeveridad
+    Asigna la severidad al incidente
+
+    public setSeveridad(severidad: string) {
+        incidente.severidad = incidente.estado.determinarSeveridad(severidad);
+    }
+end note
+
+class DirectorIncidente {
+    - incidenteBuilder: IncidenteBuilder
+
+    + construirIncidente(direccion: string, estado: string, heridos: number, severidad: string): Incidente
+}
+
+note right of DirectorIncidente::construirIncidente
+    Construye un incidente con los datos ingresados
+
+    public construirIncidente(direccion: string, estado: string, heridos: number, severidad: string): Incidente {
+        incidenteBuilder.reset();
+        incidenteBuilder.setDireccion(direccion);  
+        incidenteBuilder.setHeridos(heridos);
+        incidenteBuilder.setEstado(estado);
+        incidenteBuilder.setSeveridad(severidad);
+        return incidenteBuilder.build();
+    }
+end note
+
+
+enum EstadoInc {
+    EN_CURSO
+    FINALIZADO
+}
+
+abstract class EstadoIncidente {
+    # incidente: Incidente
+
+    + abstract determinarSeveridad(severidad: string): Severidad
+}
+
+class EnCurso implements EstadoIncidente {
+    + determinarSeveridad(severidad: string): Severidad
+}
+
+note right of EnCurso::determinarSeveridad
+    Si no hay heridos, se respeta la del cliente, máxima grave
+    Si hay heridos, la severidad es extrema
+
+    public determinarSeveridad(severidad: string) {
+        if (incidente.heridos == 0) {
+            if (severidad == "leve") {
+                return new Leve(incidente);
+            } else if (severidad == Severidad.LEVE) {
+                return new Leve(incidente);
+            } else {
+                return new Grave(incidente);
+            }
+        } else {
+            return new Extrema(incidente);
+        }
+    }
+end note
+
+class Finalizado implements EstadoIncidente {
+    + determinarSeveridad(): Severidad
+}
+
+note right of Finalizado::determinarSeveridad
+    Si no hay heridos, la severidad es un nivel menor a la indicada por el usurio
+    Si hay herido, la severidad es grave
+
+    public determinarSeveridad() {
+        if (incidente.heridos == 0) {
+            if (incidente.severidad == Severidad.LEVE || incidente.severidad == Severidad.GRAVE) {
+                return new Leve(incidente);
+            } else {
+                return new Grave(incidente);
+            }
+        } else {
+            return new Grave(incidente);
+        }
+    }
+    
+end note
+
+enum SeveridadInc {
+    LEVE
+    GRAVE
+    EXTREMA
+}
+
+' Equipo
+abstract class Severidad {
+    # incidente: Incidente
+
+    - abstract asignarVehiculos(v: Vehiculo[]): void
+    - abstract asignarOperarios(p: Operario[]): void
+    + abstract asignarEquipo(v: Vehiculo[], p: Operario[]): Equipo
+}
+
+class Leve implements Severidad {
+    + asignarEquipo(v: Vehiculo[], p: Operario[]): Equipo
+}
+
+note right of Leve::asignarEquipo
+    Asigna un equipo con un operario y un vehiculo
+
+    public asignarEquipo(v: Vehiculo[], p: Operario[]): Equipo {
+        let equipoBuilder = new EquipoBuilder();
+        equipoBuilder.setOperarios(p, 2);
+        equipoBuilder.setVehiculos(v, 2, 0, 0);
+        return equipoBuilder.build();
+    }
+end note
+
+class Grave implements Severidad {
+    + asignarEquipo(v: Vehiculo[], p: Operario[]): Equipo
+}
+
+note right of Grave::asignarEquipo
+    public asignarEquipo(v: Vehiculo[], p: Operario[]): Equipo {
+        let equipoBuilder = new EquipoBuilder();
+        if (incidente.EstadoInc == EstadoInc.EN_CURSO) {
+            equipoBuilder.setOperarios(p, 6);
+            equipoBuilder.setVehiculos(v, 1, 1, 0);
+        } else {
+            equipoBuilder.setOperarios(p, 2);
+            equipoBuilder.setVehiculos(v, 0, 0, incidente.heridos / 2);
+        }
+
+        return equipoBuilder.build();
+    }
+end note
+
+
+class Extrema implements Severidad {
+    + asignarEquipo(v: Vehiculo[], p: Operario[]): Equipo
+}
+
+note right of Extrema::asignarEquipo
+    public asignarEquipo(v: Vehiculo[], p: Operario[]): Equipo {
+        let equipoBuilder = new EquipoBuilder();
+        if (incidente.EstadoInc == EstadoInc.EN_CURSO) {
+            equipoBuilder.setOperarios(p, 10);
+            equipoBuilder.setVehiculos(v, 2, 2, incidente.heridos / 2);
+        } else {
+            equipoBuilder.setOperarios(p, 2);
+            equipoBuilder.setVehiculos(v, 0, 0, incidente.heridos / 2);
+        }
+        return equipoBuilder.build();
+    }
+end note
+
+
+class Equipo {
+    - operarios: Operario[]
+    - vehiculos: Vehiculo[]
+}
+
+class EquipoBuilder {
+    - equipo: Equipo
+
+    + reset(): void
+    + setOperarios(o: Operario[], n: number): void
+    - addVehiculoPorTipo(v: Vehiculo[], tipo: string, n: number): Vehiculo[]
+    + setVehiculos(v: Vehiculo[], motos: number, autos: number, ambulancia: number): void
+    + build(): Equipo
+}
+
+note right of EquipoBuilder::setOperarios
+    Asigna la cantidad de operarios al equipo
+
+    public setOperarios(o: Operario[], n: number) {
+        let operarios = [];
+        while (operarios.length < n && i < o.length) {
+            try {
+                o.asignar();
+                operarios.push(op);
+            } catch (e) {
+                console.log(e);
+            }
+            i++;
+        }
+        if (operarios.length < n) {
+            throw new Error("No hay suficientes operarios disponibles");
+        }
+
+        equipo.operarios = operarios;
+    }
+end note
+
+note right of EquipoBuilder::addVehiculoPorTipo
+    Agrega la cantidad de vehiculos por tipo al equipo
+
+    private addVehiculoPorTipo(v: Vehiculo[], tipo: string, n: number) : Vehiculo[] {
+        let asignables = v.filter(v => v.tipo == tipo);
+        let asignadas = [];
+        i = 0;
+        while (asignadas.length < n && i < asignables.length) {
+            try {
+                asignables[i].asignar();
+                asignadas.push(asignables[i]);
+            } catch (e) {
+                console.log(e);
+            }
+        }
+        if (asignadas.length < n) {
+            throw new Error("No hay suficientes vehiculos disponibles");
+        }
+        if (asignadas.length > 3 && tipo == TipoVehiculo.AMBULANCIA) {
+            throw new Error("No se pueden asignar más de 3 ambulancias");
+        }
+        return asignadas;
+    }
+end note
+
+note right of EquipoBuilder::setVehiculos
+    Asigna la cantidad de vehiculos al equipo
+
+    public setVehiculos(v: Vehiculo[], motos: number, autos: number, ambulancia: number) {
+        let vehiculos = [];
+
+        vehiculos = vehiculos.concat(addVehiculoPorTipo(v, TipoVehiculo.MOTO, motos));
+        vehiculos = vehiculos.concat(addVehiculoPorTipo(v, TipoVehiculo.AUTO, autos));
+        vehiculos = vehiculos.concat(addVehiculoPorTipo(v, TipoVehiculo.AMBULANCIA, ambulancia));
+
+        equipo.vehiculos = vehiculos;
+    }
+end note
+
+class DirectorEquipo {
+    - equipoBuilder: EquipoBuilder
+
+    + construirEquipo(v: Vehiculo[], p: Operario[]): Equipo
+}
+
+note right of DirectorEquipo::construirEquipo
+    Construye un equipo con los vehiculos y operarios disponibles
+
+    public construirEquipo(v: Vehiculo[], p: Operario[], i: Incidente): Equipo {
+        try {
+            i.severidad.asignarVehiculos(v);
+            i.severidad.asignarOperarios(p);
+        } catch (e) {
+            console.log(e);
+            ciudad.llamarRefuerzos(i);
+        }  
+    }
+end note
+
+@enduml
+
+

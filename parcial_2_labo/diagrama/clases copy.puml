@@ -1,0 +1,221 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+title "Parcial 2 Labo"
+
+class Sistema {
+    - mailer: Mailer
+
+    + crearPedido(imagen: Imagen, tipoPedido: TipoInfo, emailUsuario: String): Pedido
+    + procesarPedido(pedido: Pedido): void
+}
+
+note left of Sistema
+    mailer = Mailer.getInstance();
+end note
+
+note left of Sistema::crearPedido
+    const c = new CreadorPedidos();
+    const d = new DirectorPedidos(c);
+    
+    d.crearPedido(imagen, tipoPedido, emailUsuario);
+    const p = c.obtener();
+    return p;
+end note
+
+note left of Sistema::procesarPedido
+    const informe = pedido.generarInforme();
+    Mailer.enviarMail(pedido.getEmailUsuario(), informe);
+end note
+
+
+class Mailer {
+    + enviarMail(email: String, informe: Informe): void
+}
+
+class DirectorPedidos {
+    - creadorPedidos: CreadorPedidos
+
+    + crearPedido(imagen: Imagen, tipoPedido: TipoInfo, emailUsuario: String): void
+    + crearPedidoNDWI(imagen: Imagen, emailUsuario: String): void
+    + crearPedidoNDVI(imagen: Imagen, emailUsuario: String): void
+    + crearPedidoSAVI(imagen: Imagen, emailUsuario: String): void
+}
+
+note left of DirectorPedidos::crearPedido
+    if (tipoPedido == TipoInforme.NDWI) {
+        crearPedidoNDWI(imagen, emailUsuario);
+    } else if (tipoPedido == TipoInforme.NDVI) {
+        crearPedidoNDVI(imagen, emailUsuario);
+    } else if (tipoPedido == TipoInforme.SAVI) {
+        crearPedidoSAVI(imagen, emailUsuario);
+    }
+end note
+
+note left of DirectorPedidos::crearPedidoNDWI
+    this.creadorPedidos.reiniciar();
+    this.creadorPedidos.setImagen(imagen);
+    this.creadorPedidos.setTipoInfo(new IndiceNormalizadoAgua());
+    this.creadorPedidos.setEmailUsuario(emailUsuario);
+end note
+
+enum TipoInforme {
+    NDWI, 
+    NDVI, 
+    SAVI, 
+}
+
+class CreadorPedidos {
+    - pedido: Pedido
+
+    + setImagen(imagen: Imagen): void
+    + setTipoInfo(tipoInfo: TipoInfo): void
+    + setEmailUsuario(emailUsuario: String): void
+    + reiniciar(): void
+    + obtener(): Pedido
+}
+
+note left of CreadorPedidos::reiniciar
+    const pedido = new Pedido();
+    return pedido;
+end note
+
+note left of CreadorPedidos::setImagen
+    this.pedido.setImagen(imagen);
+end note
+
+note left of CreadorPedidos::setTipoInfo
+    this.pedido.setTipoInfo(tipoInfo);
+end note
+
+note left of CreadorPedidos::setEmailUsuario
+    this.pedido.setEmailUsuario(emailUsuario);
+end note
+
+note left of CreadorPedidos::crear
+    return this.pedido;
+end note
+
+
+class Informe {
+    - info: number
+}
+
+class Pedido {
+    - imagen: Imagen
+    - info: TipoInfo
+    - emailUsuario: String
+
+    + generarInforme(): Informe
+}
+
+note left of Pedido::generarInforme
+    const n = this.info.calcular(this.imagen);
+    return new Informe(n);
+end note
+
+abstract class Imagen {
+    - matrices: Matriz[]
+    - proveedor: String
+    - cantidadBandas: number
+    - ancho: number
+    - alto: number
+    - indiceR: number
+    - indiceG: number
+    - indiceB: number
+    - indiceIR: number
+    - L: number
+
+    + getMatrizR(): Matriz
+    + getMatrizG(): Matriz
+    + getMatrizB(): Matriz
+    + getMatrizIR(): Matriz
+}
+
+note bottom of Imagen
+    public getMatrizR() : Matriz {
+        return matrices[indiceR];
+    }
+
+    public getMatrizG() : Matriz {
+        return matrices[indiceG];
+    }
+
+    public getMatrizB() : Matriz {
+        return matrices[indiceB];
+    }
+
+    public getMatrizIR() : Matriz {
+        return matrices[indiceIR];
+    }
+end note
+
+class ImagenSateliteActual extends Imagen {
+    + getMatrizR(): Matriz
+    + getMatrizG(): Matriz
+    + getMatrizB(): Matriz
+    + getMatrizIR(): Matriz
+}
+
+class Matriz {
+    - datos: double[][]
+}
+
+interface TipoInfo {
+    + calcular(imagen: Imagen): number
+}
+
+class IndiceNormalizadoAgua implements TipoInfo {
+    'NDWI
+    + calcular(imagen: Imagen): number
+}
+
+note bottom of  IndiceNormalizadoAgua
+    public calcular(Imagen imagen) : number {
+        const green = imagen.GetMatriz(imagen.getIndiceG());
+        const ir = imagen.GetMatriz(imagen.getIndiceIR());
+        const result = (green - nir) / (green + nir);
+        return result;
+    }
+end note
+
+class IndiceNormalizadoVegetacion implements TipoInfo {
+    'NDVI
+    + calcular(imagen: Imagen): number
+}
+
+note bottom of IndiceNormalizadoVegetacion
+    public calcular(Imagen imagen) : number {
+        const red = imagen.GetMatriz(imagen.getIndiceR())
+        const ir = imagen.GetMatriz(imagen.getIndiceIR())
+        const result = (ir - red) / (ir + red)
+        return result;
+    }
+end note
+
+class IndiceVegetacionAjustado implements TipoInfo {
+    'SAVI
+    + calcular(imagen: Imagen): number
+}
+
+note bottom of IndiceVegetacionAjustado
+    public calcular(Imagen imagen) : number {
+        const red = imagen.GetMatriz(imagen.getIndiceR())
+        const nir = imagen.GetMatriz(imagen.getIndiceIR())
+        const L = imagen.getL()
+        const result = ((nir - red) / (nir + red + L)) * (1 + L)
+        return result;
+    }
+end note
+
+' relaciones
+DirectorPedidos --> CreadorPedidos
+Imagen *-- Matriz
+CreadorPedidos *-r- Imagen
+CreadorPedidos *-r- TipoInfo
+Sistema *-- DirectorPedidos
+Sistema *-- Mailer
+CreadorPedidos --> Pedido
+Pedido --> Informe
+
+@enduml

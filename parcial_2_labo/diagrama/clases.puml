@@ -1,0 +1,257 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+title "Parcial 2 Labo"
+
+class Sistema {
+    + directorPedidos: DirectorPedidos
+    + procesador: Procesador
+    - usuarios: Usuario[]
+    - pedidosPendientes: Pedido[]
+
+    + agregarUsuario(usuario: Usuario): void
+    + agregarPedido(pedido: Pedido): void
+}
+
+note left of Sistema::directorPedidos
+    directorPedidos = new DirectorPedidos();
+    procesador = new Procesador();
+
+    directorPedidos.seleccionarTipoPedido(TipoInfo.NDVI);
+    let pedido = directorPedidos.crearPedido(new ImagenSateliteActual(), new Usuario());
+    procesador.procesarPedidos(pedidosPendientes);
+end note
+
+class DirectorPedidos {
+    - creadorPedidos: CreadorPedidos
+    - pedido: Pedido
+
+    + seleccionarTipoPedido(tipo: TipoInfo): void
+    + crearPedido(imagen: Imagen, usuario: Usuario): Pedido
+}
+
+enum TipoInfo {
+    NDWI
+    NDVI
+    SAVI
+}
+
+note left of DirectorPedidos::seleccionarTipoPedido
+    if (tipoPedido == TipoInfo.NDWI) {
+        creadorPedidos = new CreadorPedidosNDWI();
+    } else if (tipoPedido == TipoInfo.NDVI) {
+        creadorPedidos = new CreadorPedidosNDVI();
+    } else if (tipoPedido == TipoInfo.SAVI) {
+        creadorPedidos = new CreadorPedidosSAVI();
+    }
+end note
+
+abstract class CreadorPedidos {
+    # imagen: Imagen
+    # usuario: Usuario
+
+    + setImagen(imagen: Imagen): void
+    + setEmailUsuario(emailUsuario: String): void
+}
+
+class CreadorPedidosNDWI extends CreadorPedidos {
+    + setImagen(imagen: Imagen): void
+    + setEmailUsuario(emailUsuario: String): void
+
+    + reiniciar(): void
+    + crearPedido(): PedidoNDWI
+}
+
+note bottom of CreadorPedidosNDWI
+    public crearPedido() : PedidoNDWI {
+        let pedido = new PedidoNDWI(this.imagen, this.usuario);
+        this.usuario.agregarPedido(pedido);
+        return pedido;
+    }
+end note
+
+class CreadorPedidosNDVI extends CreadorPedidos {
+    + setImagen(imagen: Imagen): void
+    + setEmailUsuario(emailUsuario: String): void
+
+    + reiniciar(): void
+    + crearPedido(): PedidoNDVI
+}
+
+note bottom of CreadorPedidosNDVI
+
+    public crearPedido() : PedidoNDVI {
+        let pedido = new PedidoNDVI(this.imagen, this.usuario);
+        this.usuario.agregarPedido(pedido);
+        return pedido;
+    }
+end note
+
+class CreadorPedidosSAVI extends CreadorPedidos {
+    + setImagen(imagen: Imagen): void
+    + setEmailUsuario(emailUsuario: String): void
+
+    + reiniciar(): void
+    + crearPedido(): PedidoSAVI
+}
+
+note bottom of CreadorPedidosSAVI
+
+    public crearPedido() : PedidoSAVI {
+        let pedido = new PedidoSAVI(this.imagen, this.usuario);
+        this.usuario.agregarPedido(pedido);
+        return pedido;
+    }
+end note
+
+class Procesador {
+    - informe: Informe
+
+    - generarInforme(pedido: Pedido): void
+    - enviarInforme(pedido: Pedido): void
+    + procesarPedido(pedido: Pedido): void
+    + procesarPedidos(pedidos: Pedido[]): void
+}
+
+note left of Procesador::generarInforme
+    let indice = pedido.getInfo().calcular(pedido.getImagen());
+    this.informe = new Informe(indice);
+end note
+
+note left of Procesador::enviarInforme
+    Mailer.enviarMail(pedido.getEmailUsuario(), this.informe);
+end note
+
+class Informe {
+    - info: TipoInfo
+}
+
+abstract class Pedido {
+    - imagen: Imagen
+    - info: TipoInfo
+    - emailUsuario: String
+}
+
+class PedidoNDWI extends Pedido {}
+
+class PedidoNDVI extends Pedido {}
+
+class PedidoSAVI extends Pedido {}
+
+class Usuario {
+    - email: String
+    - nombre: String
+    - apellido: String
+    - pedidos: Pedido[]
+}
+
+abstract class Imagen {
+    - matrices: Matriz[]
+    - proveedor: String
+    - cantidadBandas: number
+    - ancho: number
+    - alto: number
+    - indiceR: number
+    - indiceG: number
+    - indiceB: number
+    - indiceIR: number
+    - L: number
+
+    + getMatrizR(): Matriz
+    + getMatrizG(): Matriz
+    + getMatrizB(): Matriz
+    + getMatrizIR(): Matriz
+}
+
+note bottom of Imagen
+    public getMatrizR() : Matriz {
+        return matrices[indiceR];
+    }
+
+    public getMatrizG() : Matriz {
+        return matrices[indiceG];
+    }
+
+    public getMatrizB() : Matriz {
+        return matrices[indiceB];
+    }
+
+    public getMatrizIR() : Matriz {
+        return matrices[indiceIR];
+    }
+end note
+
+class ImagenSateliteActual extends Imagen {
+    + getMatrizR(): Matriz
+    + getMatrizG(): Matriz
+    + getMatrizB(): Matriz
+    + getMatrizIR(): Matriz
+}
+
+class Matriz {
+    - datos: double[][]
+}
+
+interface TipoInfo {
+    + static calcular(imagen: Imagen): number
+}
+
+class IndiceNormalizadoAgua implements TipoInfo {
+    'NDWI
+    + static calcular(imagen: Imagen): number
+}
+
+note bottom of  IndiceNormalizadoAgua
+    public calcular(Imagen imagen) : number {
+        let green = imagen.GetMatriz(imagen.getIndiceG());
+        let ir = imagen.GetMatriz(imagen.getIndiceIR());
+        let result = (green - nir) / (green + nir);
+        return result;
+    }
+end note
+
+class IndiceNormalizadoVegetacion implements TipoInfo {
+    'NDVI
+    + static calcular(imagen: Imagen): number
+}
+
+note bottom of IndiceNormalizadoVegetacion
+    public calcular(Imagen imagen) : number {
+        let red = imagen.GetMatriz(imagen.getIndiceR())
+        let ir = imagen.GetMatriz(imagen.getIndiceIR())
+        let result = (ir - red) / (ir + red)
+        return result;
+    }
+end note
+
+class IndiceVegetacionAjustado implements TipoInfo {
+    'SAVI
+    + static calcular(imagen: Imagen): number
+}
+
+note bottom of IndiceVegetacionAjustado
+    public calcular(Imagen imagen) : number {
+        let red = imagen.GetMatriz(imagen.getIndiceR())
+        let nir = imagen.GetMatriz(imagen.getIndiceIR())
+        const L = imagen.getL()
+        let result = ((nir - red) / (nir + red + L)) * (1 + L)
+        return result;
+    }
+end note
+
+' relaciones
+DirectorPedidos --> CreadorPedidos
+Imagen *-- Matriz
+CreadorPedidos *-r- Imagen
+CreadorPedidos *-r- TipoInfo
+CreadorPedidos *-l- Usuario
+CreadorPedidosNDWI --> PedidoNDWI
+CreadorPedidosNDVI --> PedidoNDVI
+CreadorPedidosSAVI --> PedidoSAVI
+Pedido -[hidden]u- PedidoNDVI
+Procesador *-- Informe
+Procesador --> Pedido
+Sistema *-- DirectorPedidos
+Sistema *-- Procesador
+
+@enduml

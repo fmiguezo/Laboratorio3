@@ -1,0 +1,110 @@
+@startuml
+
+title "Ejercicio tienda online"
+skinparam Linetype ortho
+
+interface ProductFactory {
+    + createWebcam() : Webcam
+    + createHeadset() : Headset
+    + createKitTecladoMouse() : KitTecladoMouse
+}
+
+class StarterFactory implements ProductFactory {}
+class GoldFactory implements ProductFactory {}
+class PlatinumFactory implements ProductFactory {}
+
+interface Webcam {}
+interface Headset {}
+interface KitTecladoMouse {}
+
+class StarterWebcam implements Webcam {}
+class StarterHeadset implements Headset {}
+class StarterKitTecladoMouse implements KitTecladoMouse {}
+
+class GoldWebcam implements Webcam {}
+class GoldHeadset implements Headset {}
+class GoldKitTecladoMouse implements KitTecladoMouse {}
+
+class PlatinumWebcam implements Webcam {}
+class PlatinumHeadset implements Headset {}
+class PlatinumKitTecladoMouse implements KitTecladoMouse {}
+
+class Combo {
+    - webcam : Webcam
+    - headset : Headset
+    - kitTecladoMouse : KitTecladoMouse
+}
+
+class ComboBuilder {
+    - factory: ProductFactory
+
+    + reset() : void
+    + setWebcam() : void
+    + setHeadset() : void
+    + setKitTecladoMouse() : void
+}
+
+class DirectorCombo {
+    - builder: ComboBuilder
+
+    - buildCombo : Combo
+    + buildStarterCombo() : Combo
+    + buildGoldCombo() : Combo
+    + buildPlatinumCombo() : Combo
+}
+
+' Notas
+
+note right of DirectorCombo::buildCombo
+    builder.reset()
+    builder.setWebcam()
+    builder.setHeadset()
+    builder.setKitTecladoMouse()
+    return builder.build()
+end note
+
+note right of DirectorCombo::buildStarterCombo
+    builder.factory = new StarterFactory()
+    return buildCombo()
+end note
+
+note right of DirectorCombo::buildGoldCombo
+    builder.factory = new GoldFactory()
+    return buildCombo()
+end note
+
+note right of DirectorCombo::buildPlatinumCombo
+    builder.factory = new PlatinumFactory()
+    return buildCombo()
+end note
+
+' Relaciones
+ProductFactory -[hidden]up- StarterFactory
+ProductFactory -[hidden]down- GoldFactory
+ProductFactory -[hidden]down- PlatinumFactory
+GoldFactory -[hidden]down- PlatinumFactory
+Webcam -[hidden]up- StarterWebcam
+Webcam -[hidden]down- GoldWebcam
+Webcam -[hidden]down- PlatinumWebcam
+Headset -[hidden]up- StarterHeadset
+Headset -[hidden]down- GoldHeadset
+Headset -[hidden]down- PlatinumHeadset
+KitTecladoMouse -[hidden]up- StarterKitTecladoMouse
+KitTecladoMouse -[hidden]down- GoldKitTecladoMouse
+KitTecladoMouse -[hidden]down- PlatinumKitTecladoMouse
+GoldKitTecladoMouse -[hidden]down- PlatinumKitTecladoMouse
+GoldHeadset -[hidden]down- PlatinumHeadset
+GoldWebcam -[hidden]down- PlatinumWebcam
+
+' StarterFactory ..> StarterWebcam
+' StarterFactory ..> StarterHeadset
+' StarterFactory ..> StarterKitTecladoMouse
+' StarterFactory ..> StarterMous
+' GoldFactory ..> GoldWebcam
+' GoldFactory ..> GoldHeadset
+' GoldFactory ..> GoldKitTecladoMouse
+' PlatinumFactory ..> PlatinumWebcam
+' PlatinumFactory ..> PlatinumHeadset
+' PlatinumFactory ..> PlatinumKitTecladoMouse
+
+@enduml

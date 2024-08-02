@@ -1,0 +1,63 @@
+@startuml
+
+title "Ejercicio películas"
+
+class Pelicula {
+    - titulo: string
+    - descripcion: string
+    - fechaEstreno: Date
+    - pais: string
+    - visualizaciones: number
+
+    + visualizar() : void
+    + calcularPuntaje() : number
+}
+
+note right of Pelicula::visualizar
+    public visualizar() : void {
+        visualizaciones++;
+    }
+end note
+
+note right of Pelicula::calcularPuntaje
+    puntaje = Entero más próximo (cantidad de visualizaciones * 1000  / cantidad de años desde su estreno)
+
+    public calcularPuntaje() : number {
+        return Math.round(visualizaciones * 1000 / (new Date().getFullYear() - fechaEstreno.getFullYear()));
+    }
+end note
+
+enum Orden {
+    ASC,
+    DESC
+}
+
+class ListadoPeliculas {
+    - peliculas: Pelicula[]
+
+    + agregarPelicula(pelicula: Pelicula) : void
+    + listarPorVisualizaciones(o: Orden) : Pelicula[]
+    + listarPorFechaEstreno(o: Orden) : Pelicula[]
+}
+
+note right of ListadoPeliculas::listarPorVisualizaciones
+    public listarPorVisualizaciones(o: Orden) : Pelicula[] {
+        if (o == Orden.ASC) {
+            return peliculas.sort((a, b) => a.visualizaciones - b.visualizaciones);
+        } else {
+            return peliculas.sort((a, b) => b.visualizaciones - a.visualizaciones);
+        }
+    }
+end note
+
+note right of ListadoPeliculas::listarPorFechaEstreno
+    public listarPorFechaEstreno(o: Orden) : Pelicula[] {
+        if (o == Orden.ASC) {
+            return peliculas.sort((a, b) => a.fechaEstreno - b.fechaEstreno);
+        } else {
+            return peliculas.sort((a, b) => b.fechaEstreno - a.fechaEstreno);
+        }
+    }
+end note
+
+@enduml
